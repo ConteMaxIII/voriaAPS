@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<!--
+  AssoManager - Gestionale open source per associazioni non profit / ETS
+  Copyright (c) 2026
+  Rilasciato sotto licenza MIT.
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+
+  -------------------------------------------------------------------------
+  Applicazione 100% client-side. Nessun server, nessun dato trasmesso.
+  Applicazione client-side con backend Firebase (Firestore + Auth).
+  I dati sono condivisi tra gli operatori autenticati e restano su
+  server Google nella region scelta. Configura il tuo progetto qui sotto.
+-->
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AssoManager — Gestionale Associazioni</title>
+<style>
+  :root{
+    --bg:#f4f3ee; --surface:#ffffff; --surface2:#faf9f5; --border:#e2e0d6;
+    --text:#23221e; --muted:#76746b; --accent:#1d6e56; --accent2:#185fa5;
+    --green:#1d9e75; --red:#d85a30; --amber:#ba7517; --radius:10px;
+    --shadow:0 1px 3px rgba(0,0,0,.06);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--text);font-size:15px;line-height:1.5}
+  header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;
+    display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:50}
+  header .logo{width:38px;height:38px;border-radius:9px;background:var(--accent);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px}
+  header h1{font-size:18px;margin:0;font-weight:600}
+  header .sub{font-size:12px;color:var(--muted)}
+  header .org{margin-left:auto;text-align:right;font-size:13px}
+  header .org b{display:block;font-size:14px}
+  .layout{display:flex;min-height:calc(100vh - 67px)}
+  nav{width:210px;background:var(--surface);border-right:1px solid var(--border);padding:14px 10px;flex-shrink:0}
+  nav button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:none;background:transparent;
+    padding:10px 12px;border-radius:8px;cursor:pointer;color:var(--muted);font-size:14px;margin-bottom:2px}
+  nav button:hover{background:var(--surface2)}
+  nav button.active{background:#e9f3ef;color:var(--accent);font-weight:600}
+  nav button .ic{width:18px;text-align:center}
+  main{flex:1;padding:24px 28px;max-width:1100px}
+  .page{display:none}.page.active{display:block}
+  h2.pt{font-size:20px;margin:0 0 4px}
+  p.pd{color:var(--muted);margin:0 0 20px;font-size:14px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:24px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+  .card .lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .card .val{font-size:26px;font-weight:700;margin-top:6px}
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:20px;box-shadow:var(--shadow)}
+  .panel h3{margin:0 0 14px;font-size:15px;font-weight:600}
+  .formgrid{display:grid;gap:12px;align-items:end}
+  label.f{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:500}
+  input,select,textarea{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;
+    font-size:14px;font-family:inherit;background:var(--surface);color:var(--text)}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(29,110,86,.12)}
+  button.btn{padding:9px 16px;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:8px;
+    cursor:pointer;font-size:14px;font-weight:500;font-family:inherit}
+  button.btn:hover{opacity:.92}
+  button.btn.ghost{background:transparent;color:var(--accent)}
+  button.btn.gray{background:transparent;color:var(--muted);border-color:var(--border)}
+  button.btn.danger{background:transparent;color:var(--red);border-color:#e8c4b4}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{text-align:left;padding:10px 8px;color:var(--muted);font-weight:600;font-size:12px;
+    text-transform:uppercase;letter-spacing:.03em;border-bottom:2px solid var(--border)}
+  td{padding:10px 8px;border-bottom:1px solid var(--border)}
+  tr:hover td{background:var(--surface2)}
+  .pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
+  .pill.ok{background:#e1f5ee;color:#0f6e56}
+  .pill.warn{background:#faeeda;color:#854f0b}
+  .pill.bad{background:#faece7;color:#993c1d}
+  .pill.in{background:#e1f5ee;color:#0f6e56}
+  .pill.out{background:#faece7;color:#993c1d}
+  .iconbtn{background:transparent;border:none;cursor:pointer;color:var(--muted);font-size:15px;padding:4px 6px;border-radius:6px}
+  .iconbtn:hover{background:var(--surface2);color:var(--red)}
+  .empty{text-align:center;color:var(--muted);padding:30px;font-size:14px}
+  .row-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+  .bar-wrap{display:flex;align-items:flex-end;gap:30px;height:200px;padding:10px 20px;
+    border-bottom:1px solid var(--border);margin-bottom:8px}
+  .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+  .bar{width:60%;border-radius:6px 6px 0 0;min-height:2px;transition:height .4s}
+  .bar-lbl{margin-top:8px;font-size:13px;color:var(--muted);text-align:center}
+  .bar-val{font-size:13px;font-weight:700;margin-bottom:6px}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+  .toolbar input,.toolbar select{width:auto;min-width:160px}
+  .muted{color:var(--muted)}
+  .right{text-align:right}
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;
+    justify-content:center;z-index:100;padding:20px}
+  .modal-bg.show{display:flex}
+  .modal{background:var(--surface);border-radius:14px;padding:24px;max-width:520px;width:100%;max-height:90vh;overflow:auto}
+  .modal h3{margin:0 0 16px}
+  .receipt{font-family:'Courier New',monospace;font-size:13px;border:1px dashed var(--border);padding:18px;border-radius:8px;background:var(--surface2)}
+  .receipt .rh{text-align:center;border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:10px}
+  .receipt .rt{font-weight:700;font-size:15px}
+  .receipt table{font-family:inherit}
+  .footer-note{font-size:12px;color:var(--muted);text-align:center;padding:20px;border-top:1px solid var(--border);margin-top:10px}
+  @media(max-width:760px){.layout{flex-direction:column}nav{width:100%;display:flex;overflow-x:auto;border-right:none;border-bottom:1px solid var(--border)}nav button{width:auto;white-space:nowrap}}
+  @media print{header,nav,.no-print{display:none!important}main{max-width:none}}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     CONFIGURAZIONE FIREBASE
+     Sostituisci i valori qui sotto con quelli del TUO progetto,
+     che trovi in: Console Firebase > Impostazioni progetto > Le tue app > SDK
+     ============================================================ -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getFirestore, doc, getDoc, setDoc }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  // >>>>>> INCOLLA QUI IL TUO firebaseConfig <<<<<<
+  const firebaseConfig = {
+    apiKey: "AIzaSyAAAsE9Lv4xnW506xixPKb_xcx5BvKWtg4",
+    authDomain: "voriaaps.firebaseapp.com",
+    projectId: "voriaaps",
+    storageBucket: "voriaaps.firebasestorage.app",
+    messagingSenderId: "355267489498",
+    appId: "1:355267489498:web:5fb159bd57520b318affe3"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  // Documento unico che contiene tutti i dati dell'associazione
+  const DOC = doc(db, "associazione", "dati");
+
+  // Espone al resto dell'app (codice non-module) le funzioni necessarie
+  window.FB = {
+    login: (email, pwd) => signInWithEmailAndPassword(auth, email, pwd),
+    logout: () => signOut(auth),
+    onAuth: (cb) => onAuthStateChanged(auth, cb),
+    loadCloud: async () => { const s = await getDoc(DOC); return s.exists() ? s.data().payload : null; },
+    saveCloud: async (data) => { await setDoc(DOC, { payload: data, updatedAt: Date.now() }); }
+  };
+  window.dispatchEvent(new Event("fb-ready"));
+</script>
+
+<!-- Schermata di login (copre l'app finché non si autentica un operatore) -->
+<div id="loginScreen" style="position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:32px;max-width:380px;width:100%;box-shadow:var(--shadow);text-align:center">
+    <div style="width:48px;height:48px;border-radius:11px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:22px;margin:0 auto 14px">A</div>
+    <h2 style="margin:0 0 4px;font-size:19px">AssoManager</h2>
+    <p style="color:var(--muted);font-size:13px;margin:0 0 22px">Accesso riservato agli operatori</p>
+    <div style="text-align:left">
+      <label class="f">Email</label>
+      <input id="loginEmail" type="email" placeholder="operatore@email.it" style="margin-bottom:12px">
+      <label class="f">Password</label>
+      <input id="loginPwd" type="password" placeholder="••••••••" style="margin-bottom:18px"
+        onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn" style="width:100%" onclick="doLogin()">Accedi</button>
+    <p id="loginErr" style="color:var(--red);font-size:13px;margin:12px 0 0;display:none"></p>
+    <p style="color:var(--muted);font-size:11.5px;margin:18px 0 0">Gli account si creano nella Console Firebase ›<br>Authentication › Users</p>
+  </div>
+</div>
+
+<header>
+  <div class="logo">A</div>
+  <div>
+    <h1>AssoManager</h1>
+    <div class="sub">Gestionale open source · dati locali</div>
+  </div>
+  <div class="org" id="orgHeader">
+    <b id="orgNameH">La tua associazione</b>
+    <span class="muted" id="orgFiscalH"></span>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;margin-left:14px">
+    <span id="syncStatus" class="muted" style="font-size:11px">—</span>
+    <button class="btn gray" style="padding:5px 12px;font-size:12px" onclick="doLogout()">Esci</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav id="nav">
+    <button data-p="dash" class="active"><span class="ic">▦</span> Riepilogo</button>
+    <button data-p="soci"><span class="ic">☺</span> Soci</button>
+    <button data-p="quote"><span class="ic">€</span> Quote</button>
+    <button data-p="movimenti"><span class="ic">⇅</span> Entrate / Uscite</button>
+    <button data-p="eventi"><span class="ic">◷</span> Eventi</button>
+    <button data-p="rendiconto"><span class="ic">▤</span> Rendiconto</button>
+    <button data-p="impostazioni"><span class="ic">⚙</span> Impostazioni</button>
+  </nav>
+
+  <main>
+    <!-- DASHBOARD -->
+    <section class="page active" id="p-dash">
+      <h2 class="pt">Riepilogo</h2>
+      <p class="pd">Quadro sintetico della situazione associativa e di cassa.</p>
+      <div class="cards">
+        <div class="card"><div class="lbl">Soci totali</div><div class="val" id="dSoci">0</div></div>
+        <div class="card"><div class="lbl">Soci in regola</div><div class="val" id="dRegola" style="color:var(--green)">0</div></div>
+        <div class="card"><div class="lbl">Entrate anno</div><div class="val" id="dIn" style="color:var(--green)">€ 0</div></div>
+        <div class="card"><div class="lbl">Uscite anno</div><div class="val" id="dOut" style="color:var(--red)">€ 0</div></div>
+        <div class="card"><div class="lbl">Saldo di cassa</div><div class="val" id="dBal">€ 0</div></div>
+      </div>
+      <div class="panel">
+        <h3>Entrate / Uscite / Saldo <span class="muted" id="dYearLbl"></span></h3>
+        <div class="bar-wrap" id="dBars"></div>
+      </div>
+      <div class="panel">
+        <h3>Quote in scadenza o scadute</h3>
+        <table><thead><tr><th>Socio</th><th>Tipo quota</th><th>Scadenza</th><th>Stato</th></tr></thead>
+        <tbody id="dScadenze"></tbody></table>
+      </div>
+    </section>
+
+    <!-- SOCI -->
+    <section class="page" id="p-soci">
+      <h2 class="pt">Anagrafica soci</h2>
+      <p class="pd">Registro dei soci con dati anagrafici, ruolo e tessera.</p>
+      <div class="panel">
+        <h3>Nuovo socio</h3>
+        <div class="formgrid" style="grid-template-columns:1.3fr 1.3fr 1fr 1fr">
+          <div><label class="f">Nome e cognome *</label><input id="sNome" placeholder="Mario Rossi"></div>
+          <div><label class="f">Email</label><input id="sEmail" placeholder="mario@email.it"></div>
+          <div><label class="f">Codice fiscale</label><input id="sCf" placeholder="RSSMRA..."></div>
+          <div><label class="f">Telefono</label><input id="sTel" placeholder="333..."></div>
+        </div>
+        <div class="formgrid" style="grid-template-columns:1fr 1fr 1fr 1fr;margin-top:12px">
+          <div><label class="f">N. tessera</label><input id="sTessera" placeholder="auto"></div>
+          <div><label class="f">Ruolo</label><select id="sRuolo">
+            <option>Socio ordinario</option><option>Socio sostenitore</option><option>Volontario</option>
+            <option>Consigliere</option><option>Presidente</option><option>Vicepresidente</option>
+            <option>Tesoriere</option><option>Segretario</option></select></div>
+          <div><label class="f">Data iscrizione</label><input id="sData" type="date"></div>
+          <div style="display:flex;align-items:flex-end"><button class="btn" onclick="addSocio()" style="width:100%">+ Aggiungi socio</button></div>
+        </div>
+      </div>
+      <div class="toolbar">
+        <input id="socFilter" placeholder="🔍 Cerca socio..." oninput="renderSoci()">
+        <select id="socRuoloF" onchange="renderSoci()"><option value="">Tutti i ruoli</option></select>
+      </div>
+      <div class="panel" style="padding:0;overflow:auto">
+        <table><thead><tr><th>Tessera</th><th>Nome</th><th>Ruolo</th><th>Contatti</th><th>Iscrizione</th><th>Quote versate</th><th>Stato</th><th></th></tr></thead>
+        <tbody id="sociBody"></tbody></table>
+      </div>
+    </section>
+
+    <!-- QUOTE -->
+    <section class="page" id="p-quote">
+      <h2 class="pt">Quote associative</h2>
+      <p class="pd">Registrazione delle quote con periodo di competenza e scadenza. La quota genera automaticamente un'entrata in cassa e una ricevuta.</p>
+      <div class="panel">
+        <h3>Registra quota</h3>
+        <div class="formgrid" style="grid-template-columns:1.6fr 1.2fr 1fr 1fr 1fr">
+          <div><label class="f">Socio *</label><select id="qSocio"></select></div>
+          <div><label class="f">Tipo quota</label><select id="qTipo">
+            <option>Quota annuale</option><option>Quota semestrale</option><option>Quota sostenitore</option>
+            <option>Iscrizione</option><option>Donazione liberale</option></select></div>
+          <div><label class="f">Importo €</label><input id="qImporto" type="number" min="0" step="0.01" placeholder="25.00"></div>
+          <div><label class="f">Data versamento</label><input id="qData" type="date"></div>
+          <div><label class="f">Valida fino al</label><input id="qScadenza" type="date"></div>
+        </div>
+        <div class="row-actions"><button class="btn" onclick="addQuota()">+ Registra quota e genera ricevuta</button></div>
+      </div>
+      <div class="panel" style="padding:0;overflow:auto">
+        <table><thead><tr><th>Ric. n.</th><th>Socio</th><th>Tipo</th><th>Importo</th><th>Versata</th><th>Scadenza</th><th>Stato</th><th></th></tr></thead>
+        <tbody id="quoteBody"></tbody></table>
+      </div>
+    </section>
+
+    <!-- MOVIMENTI -->
+    <section class="page" id="p-movimenti">
+      <h2 class="pt">Entrate e uscite</h2>
+      <p class="pd">Prima nota di cassa. Le quote confluiscono qui automaticamente; puoi aggiungere altre entrate e tutte le spese.</p>
+      <div class="panel">
+        <h3>Nuovo movimento</h3>
+        <div class="formgrid" style="grid-template-columns:1fr 1.6fr 1fr 1fr 1fr">
+          <div><label class="f">Tipo</label><select id="mTipo" onchange="syncCausali()">
+            <option value="out">Uscita</option><option value="in">Entrata</option></select></div>
+          <div><label class="f">Descrizione *</label><input id="mDesc" placeholder="Affitto sede / Contributo..."></div>
+          <div><label class="f">Causale</label><select id="mCausale"></select></div>
+          <div><label class="f">Importo €</label><input id="mImporto" type="number" min="0" step="0.01" placeholder="100.00"></div>
+          <div><label class="f">Data</label><input id="mData" type="date"></div>
+        </div>
+        <div class="row-actions"><button class="btn" onclick="addMov()">+ Registra movimento</button></div>
+      </div>
+      <div class="toolbar">
+        <select id="movTipoF" onchange="renderMov()"><option value="">Tutti</option><option value="in">Solo entrate</option><option value="out">Solo uscite</option></select>
+        <select id="movYearF" onchange="renderMov()"></select>
+        <input id="movFilter" placeholder="🔍 Cerca descrizione..." oninput="renderMov()">
+      </div>
+      <div class="panel" style="padding:0;overflow:auto">
+        <table><thead><tr><th>Data</th><th>Descrizione</th><th>Causale</th><th>Tipo</th><th class="right">Importo</th><th></th></tr></thead>
+        <tbody id="movBody"></tbody></table>
+      </div>
+    </section>
+
+    <!-- EVENTI -->
+    <section class="page" id="p-eventi">
+      <h2 class="pt">Eventi e attività</h2>
+      <p class="pd">Calendario delle attività associative con luogo e note.</p>
+      <div class="panel">
+        <h3>Nuovo evento</h3>
+        <div class="formgrid" style="grid-template-columns:1.5fr 1fr 1.2fr 1.5fr">
+          <div><label class="f">Titolo *</label><input id="eTitolo" placeholder="Assemblea ordinaria"></div>
+          <div><label class="f">Data</label><input id="eData" type="date"></div>
+          <div><label class="f">Luogo</label><input id="eLuogo" placeholder="Sede sociale"></div>
+          <div><label class="f">Note</label><input id="eNote" placeholder="Ordine del giorno..."></div>
+        </div>
+        <div class="row-actions"><button class="btn" onclick="addEvento()">+ Aggiungi evento</button></div>
+      </div>
+      <div class="panel" style="padding:0;overflow:auto">
+        <table><thead><tr><th>Data</th><th>Titolo</th><th>Luogo</th><th>Note</th><th></th></tr></thead>
+        <tbody id="eventiBody"></tbody></table>
+      </div>
+    </section>
+
+    <!-- RENDICONTO -->
+    <section class="page" id="p-rendiconto">
+      <h2 class="pt">Rendiconto per cassa</h2>
+      <p class="pd">Prospetto entrate/uscite per categoria, ispirato allo schema del rendiconto per cassa degli ETS (D.M. 5 marzo 2020). Selezionabile per anno e stampabile.</p>
+      <div class="toolbar no-print">
+        <label class="f" style="margin:0">Anno&nbsp;</label>
+        <select id="rendYear" onchange="renderRendiconto()"></select>
+        <button class="btn ghost" onclick="window.print()">🖨 Stampa / PDF</button>
+        <button class="btn ghost" onclick="exportCSV()">⬇ Esporta CSV</button>
+      </div>
+      <div class="panel" id="rendBox"></div>
+    </section>
+
+    <!-- IMPOSTAZIONI -->
+    <section class="page" id="p-impostazioni">
+      <h2 class="pt">Impostazioni</h2>
+      <p class="pd">Dati dell'associazione, backup dei dati e ripristino.</p>
+      <div class="panel">
+        <h3>Dati associazione</h3>
+        <div class="formgrid" style="grid-template-columns:1fr 1fr">
+          <div><label class="f">Denominazione</label><input id="orgName" placeholder="Associazione..."></div>
+          <div><label class="f">Codice fiscale / P.IVA</label><input id="orgFiscal" placeholder="..."></div>
+          <div><label class="f">Sede</label><input id="orgSede" placeholder="Via..., Città"></div>
+          <div><label class="f">Legale rappresentante / Tesoriere</label><input id="orgRapp" placeholder="Nome Cognome"></div>
+        </div>
+        <div class="row-actions"><button class="btn" onclick="saveOrg()">Salva dati associazione</button></div>
+      </div>
+      <div class="panel">
+        <h3>Backup e ripristino</h3>
+        <p class="muted" style="font-size:13.5px;margin-top:0">I dati sono salvati solo nel tuo browser. Esporta regolarmente un backup per non perderli e per spostarli su un altro computer.</p>
+        <div class="row-actions">
+          <button class="btn" onclick="exportBackup()">⬇ Esporta backup (JSON)</button>
+          <button class="btn gray" onclick="document.getElementById('importFile').click()">⬆ Importa backup</button>
+          <input type="file" id="importFile" accept=".json" style="display:none" onchange="importBackup(event)">
+          <button class="btn danger" onclick="resetAll()">Azzera tutti i dati</button>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Informazioni</h3>
+        <p class="muted" style="font-size:13.5px;margin:0">AssoManager — software libero rilasciato sotto <b>licenza MIT</b>. Applicazione interamente client-side: nessun dato lascia il tuo dispositivo. Puoi modificarlo, copiarlo e distribuirlo liberamente.</p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="modal-bg" id="modalBg"><div class="modal" id="modalContent"></div></div>
+
+<div class="footer-note">AssoManager · gestionale open source per associazioni non profit ed ETS · licenza MIT · funziona offline</div>
+
+<script>
+"use strict";
+// ---------- Stato e persistenza ----------
+const KEY = "assomanager_v1";
+let DB = { org:{}, soci:[], quote:[], mov:[], eventi:[], counters:{tessera:1, ricevuta:1} };
+const CAUSALI_IN = ["Quote associative","Contributi pubblici","Erogazioni liberali","Raccolta fondi","Attività di interesse generale","Altre entrate"];
+const CAUSALI_OUT= ["Affitti e utenze","Materiali e forniture","Servizi","Personale e collaborazioni","Spese eventi","Spese amministrative","Imposte e tasse","Altre uscite"];
+
+function load(){ /* sostituita da loadCloud su Firebase */ }
+
+// Salvataggio: scrive su Firestore (con piccolo debounce per evitare scritture a raffica)
+let _saveTimer=null, _saving=false;
+function save(){
+  if(!window.FB || !_authReady) return;
+  setSync("saving");
+  clearTimeout(_saveTimer);
+  _saveTimer=setTimeout(async ()=>{
+    try{ _saving=true; await window.FB.saveCloud(DB); setSync("ok"); }
+    catch(e){ console.error(e); setSync("err"); alert("Errore di salvataggio sul cloud: "+e.message); }
+    finally{ _saving=false; }
+  }, 600);
+}
+function setSync(state){
+  const el=document.getElementById("syncStatus"); if(!el)return;
+  const map={saving:["Salvataggio…","var(--amber)"],ok:["✓ Sincronizzato","var(--green)"],
+    err:["⚠ Errore sync","var(--red)"],load:["Caricamento…","var(--muted)"]};
+  const [t,c]=map[state]||["—","var(--muted)"]; el.textContent=t; el.style.color=c;
+}
+const eur = n => "€ "+(Math.round((n||0)*100)/100).toLocaleString("it-IT",{minimumFractionDigits:2,maximumFractionDigits:2});
+const today = () => new Date().toISOString().slice(0,10);
+const yearOf = d => (d||"").slice(0,4);
+const fmtDate = d => { if(!d) return "—"; const p=d.split("-"); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:d; };
+const uid = () => Date.now()+Math.floor(Math.random()*1000);
+
+// ---------- Navigazione ----------
+document.getElementById("nav").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-p]"); if(!b) return;
+  document.querySelectorAll("#nav button").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+  document.getElementById("p-"+b.dataset.p).classList.add("active");
+  renderAll();
+});
+
+// ---------- SOCI ----------
+function memberFeesTotal(id){ return DB.quote.filter(q=>q.socio===id).reduce((a,b)=>a+b.importo,0); }
+function memberStatus(id){
+  const qs=DB.quote.filter(q=>q.socio===id && q.scadenza);
+  if(!qs.length) return {cls:"warn",txt:"Senza quota"};
+  const latest=qs.map(q=>q.scadenza).sort().reverse()[0];
+  const t=today();
+  const soon=new Date(t); soon.setMonth(soon.getMonth()+1);
+  if(latest < t) return {cls:"bad",txt:"Scaduto"};
+  if(latest <= soon.toISOString().slice(0,10)) return {cls:"warn",txt:"In scadenza"};
+  return {cls:"ok",txt:"In regola"};
+}
+function addSocio(){
+  const nome=val("sNome"); if(!nome){flash("sNome");return;}
+  const tessera = val("sTessera") || String(DB.counters.tessera++);
+  DB.soci.push({id:uid(),nome,email:val("sEmail"),cf:val("sCf"),tel:val("sTel"),
+    tessera,ruolo:val("sRuolo"),data:val("sData")||today()});
+  ["sNome","sEmail","sCf","sTel","sTessera","sData"].forEach(clr);
+  save(); renderAll();
+}
+function delSocio(id){ if(!confirm("Eliminare il socio? Le sue quote resteranno registrate come 'socio eliminato'."))return;
+  DB.soci=DB.soci.filter(s=>s.id!==id); save(); renderAll(); }
+function renderSoci(){
+  const f=(val("socFilter")||"").toLowerCase(); const rf=val("socRuoloF");
+  const ruoli=[...new Set(DB.soci.map(s=>s.ruolo))];
+  const sel=document.getElementById("socRuoloF"); const cur=sel.value;
+  sel.innerHTML='<option value="">Tutti i ruoli</option>'+ruoli.map(r=>`<option ${r===cur?"selected":""}>${esc(r)}</option>`).join("");
+  let list=DB.soci.filter(s=>(!f||s.nome.toLowerCase().includes(f)||(s.tessera||"").includes(f))&&(!rf||s.ruolo===rf));
+  const b=document.getElementById("sociBody");
+  b.innerHTML = list.length? list.map(s=>{
+    const st=memberStatus(s.id);
+    const cont=[s.email,s.tel].filter(Boolean).join(" · ")||"—";
+    return `<tr><td><b>${esc(s.tessera)}</b></td><td>${esc(s.nome)}<div class="muted" style="font-size:11px">${esc(s.cf||"")}</div></td>
+      <td>${esc(s.ruolo)}</td><td class="muted">${esc(cont)}</td><td>${fmtDate(s.data)}</td>
+      <td>${eur(memberFeesTotal(s.id))}</td><td><span class="pill ${st.cls}">${st.txt}</span></td>
+      <td><button class="iconbtn" onclick="delSocio(${s.id})">🗑</button></td></tr>`;
+  }).join("") : `<tr><td colspan="8" class="empty">Nessun socio registrato.</td></tr>`;
+}
+
+// ---------- QUOTE ----------
+function addQuota(){
+  const sid=parseInt(val("qSocio")); const imp=parseFloat(val("qImporto"));
+  if(!sid){alert("Seleziona un socio.");return;} if(isNaN(imp)||imp<=0){flash("qImporto");return;}
+  const ric=DB.counters.ricevuta++;
+  const data=val("qData")||today();
+  const q={id:uid(),socio:sid,tipo:val("qTipo"),importo:imp,data,scadenza:val("qScadenza"),ricevuta:ric};
+  DB.quote.push(q);
+  // genera entrata collegata in prima nota
+  DB.mov.push({id:uid(),tipo:"in",desc:val("qTipo")+" — ric. n."+ric,causale:"Quote associative",importo:imp,data,linkQuota:q.id});
+  ["qImporto","qScadenza"].forEach(clr);
+  save(); renderAll();
+  showReceipt(q);
+}
+function delQuota(id){ if(!confirm("Eliminare la quota e la relativa entrata in cassa?"))return;
+  DB.quote=DB.quote.filter(q=>q.id!==id);
+  DB.mov=DB.mov.filter(m=>m.linkQuota!==id);
+  save(); renderAll(); }
+function renderQuote(){
+  const b=document.getElementById("quoteBody");
+  const list=DB.quote.slice().sort((a,b)=>b.ricevuta-a.ricevuta);
+  b.innerHTML=list.length? list.map(q=>{
+    const s=DB.soci.find(x=>x.id===q.socio);
+    let stato='<span class="pill ok">Valida</span>';
+    if(q.scadenza){ if(q.scadenza<today()) stato='<span class="pill bad">Scaduta</span>'; }
+    return `<tr><td><b>${q.ricevuta}</b></td><td>${s?esc(s.nome):"<i>socio eliminato</i>"}</td>
+      <td>${esc(q.tipo)}</td><td style="color:var(--green)">${eur(q.importo)}</td>
+      <td>${fmtDate(q.data)}</td><td>${q.scadenza?fmtDate(q.scadenza):"—"}</td><td>${stato}</td>
+      <td><button class="iconbtn" onclick='showReceipt(${JSON.stringify(q)})' title="Ricevuta">🧾</button>
+      <button class="iconbtn" onclick="delQuota(${q.id})">🗑</button></td></tr>`;
+  }).join(""):`<tr><td colspan="8" class="empty">Nessuna quota registrata.</td></tr>`;
+}
+function showReceipt(q){
+  const s=DB.soci.find(x=>x.id===q.socio);
+  const o=DB.org;
+  document.getElementById("modalContent").innerHTML=`
+    <h3>Ricevuta n. ${q.ricevuta}</h3>
+    <div class="receipt" id="receiptPrint">
+      <div class="rh"><div class="rt">${esc(o.name||"Associazione")}</div>
+        <div>${esc(o.sede||"")}</div><div>C.F./P.IVA ${esc(o.fiscal||"—")}</div></div>
+      <div><b>Ricevuta n. ${q.ricevuta}</b> del ${fmtDate(q.data)}</div>
+      <p>Si attesta il versamento da parte di:<br><b>${s?esc(s.nome):"—"}</b>${s&&s.cf?" — C.F. "+esc(s.cf):""}
+      ${s?"<br>Tessera n. "+esc(s.tessera):""}</p>
+      <table style="margin:10px 0"><tr><td>${esc(q.tipo)}</td><td class="right"><b>${eur(q.importo)}</b></td></tr>
+      <tr><td><b>Totale</b></td><td class="right"><b>${eur(q.importo)}</b></td></tr></table>
+      ${q.scadenza?`<div>Validità fino al ${fmtDate(q.scadenza)}</div>`:""}
+      <p style="margin-top:18px">Il Tesoriere / Legale rappresentante<br><br>${esc(o.rapp||"_______________________")}</p>
+    </div>
+    <div class="row-actions">
+      <button class="btn" onclick="printReceipt()">🖨 Stampa</button>
+      <button class="btn gray" onclick="closeModal()">Chiudi</button>
+    </div>`;
+  document.getElementById("modalBg").classList.add("show");
+}
+function printReceipt(){
+  const w=window.open("","_blank");
+  w.document.write("<html><head><title>Ricevuta</title></head><body>"+document.getElementById("receiptPrint").outerHTML+
+    "<style>body{font-family:Courier New,monospace;padding:30px}table{width:100%;border-collapse:collapse}.right{text-align:right}.rh{text-align:center;border-bottom:1px solid #999;padding-bottom:10px;margin-bottom:10px}</style></body></html>");
+  w.document.close(); w.focus(); w.print();
+}
+function closeModal(){ document.getElementById("modalBg").classList.remove("show"); }
+document.getElementById("modalBg").addEventListener("click",e=>{if(e.target.id==="modalBg")closeModal();});
+
+// ---------- MOVIMENTI ----------
+function syncCausali(){
+  const t=val("mTipo"); const sel=document.getElementById("mCausale");
+  const arr=t==="in"?CAUSALI_IN:CAUSALI_OUT;
+  sel.innerHTML=arr.map(c=>`<option>${esc(c)}</option>`).join("");
+}
+function addMov(){
+  const desc=val("mDesc"); const imp=parseFloat(val("mImporto"));
+  if(!desc){flash("mDesc");return;} if(isNaN(imp)||imp<=0){flash("mImporto");return;}
+  DB.mov.push({id:uid(),tipo:val("mTipo"),desc,causale:val("mCausale"),importo:imp,data:val("mData")||today()});
+  ["mDesc","mImporto"].forEach(clr);
+  save(); renderAll();
+}
+function delMov(id){
+  const m=DB.mov.find(x=>x.id===id);
+  if(m&&m.linkQuota){alert("Questo movimento deriva da una quota: eliminalo dalla sezione Quote.");return;}
+  if(!confirm("Eliminare il movimento?"))return;
+  DB.mov=DB.mov.filter(x=>x.id!==id); save(); renderAll();
+}
+function renderMov(){
+  fillYearSelect("movYearF");
+  const tf=val("movTipoF"), yf=val("movYearF"), f=(val("movFilter")||"").toLowerCase();
+  let list=DB.mov.filter(m=>(!tf||m.tipo===tf)&&(!yf||yearOf(m.data)===yf)&&(!f||m.desc.toLowerCase().includes(f)));
+  list.sort((a,b)=>(b.data||"").localeCompare(a.data||""));
+  const b=document.getElementById("movBody");
+  b.innerHTML=list.length? list.map(m=>`<tr><td>${fmtDate(m.data)}</td><td>${esc(m.desc)}</td>
+    <td class="muted">${esc(m.causale||"")}</td><td><span class="pill ${m.tipo}">${m.tipo==="in"?"Entrata":"Uscita"}</span></td>
+    <td class="right" style="color:${m.tipo==="in"?"var(--green)":"var(--red)"}">${m.tipo==="in"?"+":"−"}${eur(m.importo)}</td>
+    <td><button class="iconbtn" onclick="delMov(${m.id})">🗑</button></td></tr>`).join("")
+    :`<tr><td colspan="6" class="empty">Nessun movimento.</td></tr>`;
+}
+
+// ---------- EVENTI ----------
+function addEvento(){
+  const t=val("eTitolo"); if(!t){flash("eTitolo");return;}
+  DB.eventi.push({id:uid(),titolo:t,data:val("eData")||today(),luogo:val("eLuogo"),note:val("eNote")});
+  ["eTitolo","eData","eLuogo","eNote"].forEach(clr); save(); renderEventi();
+}
+function delEvento(id){ DB.eventi=DB.eventi.filter(e=>e.id!==id); save(); renderEventi(); }
+function renderEventi(){
+  const list=DB.eventi.slice().sort((a,b)=>(b.data||"").localeCompare(a.data||""));
+  document.getElementById("eventiBody").innerHTML=list.length? list.map(e=>
+    `<tr><td>${fmtDate(e.data)}</td><td><b>${esc(e.titolo)}</b></td><td>${esc(e.luogo||"—")}</td>
+    <td class="muted">${esc(e.note||"")}</td><td><button class="iconbtn" onclick="delEvento(${e.id})">🗑</button></td></tr>`).join("")
+    :`<tr><td colspan="5" class="empty">Nessun evento in calendario.</td></tr>`;
+}
+
+// ---------- DASHBOARD ----------
+function renderDash(){
+  const y=today().slice(0,4);
+  document.getElementById("dYearLbl").textContent="("+y+")";
+  document.getElementById("dSoci").textContent=DB.soci.length;
+  document.getElementById("dRegola").textContent=DB.soci.filter(s=>memberStatus(s.id).cls==="ok").length;
+  const inY=DB.mov.filter(m=>m.tipo==="in"&&yearOf(m.data)===y).reduce((a,b)=>a+b.importo,0);
+  const outY=DB.mov.filter(m=>m.tipo==="out"&&yearOf(m.data)===y).reduce((a,b)=>a+b.importo,0);
+  const totIn=DB.mov.filter(m=>m.tipo==="in").reduce((a,b)=>a+b.importo,0);
+  const totOut=DB.mov.filter(m=>m.tipo==="out").reduce((a,b)=>a+b.importo,0);
+  document.getElementById("dIn").textContent=eur(inY);
+  document.getElementById("dOut").textContent=eur(outY);
+  const bal=totIn-totOut;
+  const db=document.getElementById("dBal"); db.textContent=eur(bal);
+  db.style.color=bal>=0?"var(--green)":"var(--red)";
+  // barre
+  const mx=Math.max(inY,outY,Math.abs(bal),1);
+  const bar=(v,col,lbl)=>{const h=Math.round(Math.abs(v)/mx*160)+2;
+    return `<div class="bar-col"><div class="bar-val">${eur(v)}</div><div class="bar" style="height:${h}px;background:${col}"></div><div class="bar-lbl">${lbl}</div></div>`;};
+  document.getElementById("dBars").innerHTML=bar(inY,"#1d9e75","Entrate")+bar(outY,"#d85a30","Uscite")+bar(bal,"#185fa5","Saldo cassa");
+  // scadenze
+  const rows=[];
+  DB.soci.forEach(s=>{const st=memberStatus(s.id); if(st.cls!=="ok"){
+    const qs=DB.quote.filter(q=>q.socio===s.id&&q.scadenza).map(q=>q.scadenza).sort().reverse();
+    rows.push(`<tr><td>${esc(s.nome)}</td><td>${qs.length?"Ultima quota":"—"}</td><td>${qs.length?fmtDate(qs[0]):"—"}</td><td><span class="pill ${st.cls}">${st.txt}</span></td></tr>`);}});
+  document.getElementById("dScadenze").innerHTML=rows.length?rows.join(""):`<tr><td colspan="4" class="empty">Tutti i soci sono in regola.</td></tr>`;
+}
+
+// ---------- RENDICONTO ----------
+function renderRendiconto(){
+  fillYearSelect("rendYear");
+  const y=val("rendYear")||today().slice(0,4);
+  const inMov=DB.mov.filter(m=>m.tipo==="in"&&yearOf(m.data)===y);
+  const outMov=DB.mov.filter(m=>m.tipo==="out"&&yearOf(m.data)===y);
+  const grp=(arr,cats)=>{const o={}; cats.forEach(c=>o[c]=0); arr.forEach(m=>{const c=m.causale&&cats.includes(m.causale)?m.causale:cats[cats.length-1]; o[c]=(o[c]||0)+m.importo;}); return o;};
+  const gIn=grp(inMov,CAUSALI_IN), gOut=grp(outMov,CAUSALI_OUT);
+  const tIn=inMov.reduce((a,b)=>a+b.importo,0), tOut=outMov.reduce((a,b)=>a+b.importo,0);
+  const o=DB.org;
+  const rowsIn=CAUSALI_IN.filter(c=>gIn[c]>0).map(c=>`<tr><td>${esc(c)}</td><td class="right">${eur(gIn[c])}</td></tr>`).join("")||`<tr><td class="muted">Nessuna entrata</td><td class="right">€ 0,00</td></tr>`;
+  const rowsOut=CAUSALI_OUT.filter(c=>gOut[c]>0).map(c=>`<tr><td>${esc(c)}</td><td class="right">${eur(gOut[c])}</td></tr>`).join("")||`<tr><td class="muted">Nessuna uscita</td><td class="right">€ 0,00</td></tr>`;
+  document.getElementById("rendBox").innerHTML=`
+    <div style="text-align:center;margin-bottom:18px">
+      <div style="font-size:18px;font-weight:700">${esc(o.name||"Associazione")}</div>
+      <div class="muted">${esc(o.sede||"")} ${o.fiscal?" · C.F. "+esc(o.fiscal):""}</div>
+      <div style="font-weight:600;margin-top:8px">Rendiconto per cassa — esercizio ${y}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+      <div><h3 style="color:var(--green)">ENTRATE</h3><table>${rowsIn}
+        <tr style="border-top:2px solid var(--border)"><td><b>Totale entrate</b></td><td class="right"><b>${eur(tIn)}</b></td></tr></table></div>
+      <div><h3 style="color:var(--red)">USCITE</h3><table>${rowsOut}
+        <tr style="border-top:2px solid var(--border)"><td><b>Totale uscite</b></td><td class="right"><b>${eur(tOut)}</b></td></tr></table></div>
+    </div>
+    <div style="margin-top:20px;padding-top:16px;border-top:2px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <b style="font-size:16px">Avanzo / Disavanzo dell'esercizio</b>
+      <b style="font-size:20px;color:${tIn-tOut>=0?'var(--green)':'var(--red)'}">${eur(tIn-tOut)}</b>
+    </div>
+    <p class="muted" style="margin-top:24px;font-size:12.5px">Schema ispirato al rendiconto per cassa per gli enti del Terzo Settore di minori dimensioni (D.M. 5 marzo 2020, modello D). Documento da validare con il proprio consulente prima del deposito.</p>`;
+}
+
+// ---------- EXPORT ----------
+function exportCSV(){
+  const y=val("rendYear")||today().slice(0,4);
+  let rows=[["Data","Tipo","Descrizione","Causale","Importo"]];
+  DB.mov.filter(m=>yearOf(m.data)===y).sort((a,b)=>(a.data||"").localeCompare(b.data||""))
+    .forEach(m=>rows.push([m.data,m.tipo==="in"?"Entrata":"Uscita",m.desc,m.causale||"",(m.tipo==="in"?"":"-")+m.importo.toFixed(2)]));
+  const tIn=DB.mov.filter(m=>m.tipo==="in"&&yearOf(m.data)===y).reduce((a,b)=>a+b.importo,0);
+  const tOut=DB.mov.filter(m=>m.tipo==="out"&&yearOf(m.data)===y).reduce((a,b)=>a+b.importo,0);
+  rows.push([]); rows.push(["","","","Totale entrate",tIn.toFixed(2)]);
+  rows.push(["","","","Totale uscite","-"+tOut.toFixed(2)]); rows.push(["","","","Avanzo/Disavanzo",(tIn-tOut).toFixed(2)]);
+  const csv=rows.map(r=>r.map(c=>'"'+(c==null?"":String(c))+'"').join(";")).join("\n");
+  download("rendiconto_"+y+".csv",new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8;"}));
+}
+function exportBackup(){ download("assomanager_backup_"+today()+".json",new Blob([JSON.stringify(DB,null,2)],{type:"application/json"})); }
+function importBackup(ev){
+  const f=ev.target.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{ try{const d=JSON.parse(r.result);
+    if(!d.soci||!d.mov) throw 0;
+    if(confirm("Importare questo backup? I dati attuali verranno sostituiti.")){DB=d; save(); initForms(); renderAll(); alert("Backup importato.");}
+  }catch(e){alert("File non valido.");} };
+  r.readAsText(f); ev.target.value="";
+}
+function resetAll(){ if(confirm("Azzerare TUTTI i dati in modo definitivo?")&&confirm("Confermi? L'operazione non è reversibile.")){
+  DB={org:DB.org,soci:[],quote:[],mov:[],eventi:[],counters:{tessera:1,ricevuta:1}}; save(); renderAll(); } }
+
+// ---------- ORG ----------
+function saveOrg(){
+  DB.org={name:val("orgName"),fiscal:val("orgFiscal"),sede:val("orgSede"),rapp:val("orgRapp")};
+  save(); renderOrgHeader(); alert("Dati associazione salvati.");
+}
+function renderOrgHeader(){
+  const o=DB.org;
+  document.getElementById("orgNameH").textContent=o.name||"La tua associazione";
+  document.getElementById("orgFiscalH").textContent=o.fiscal?("C.F. "+o.fiscal):"";
+}
+
+// ---------- HELPERS ----------
+function val(id){return (document.getElementById(id).value||"").trim();}
+function clr(id){document.getElementById(id).value="";}
+function flash(id){const e=document.getElementById(id); e.focus(); e.style.borderColor="var(--red)"; setTimeout(()=>e.style.borderColor="",1200);}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function download(name,blob){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
+function fillYearSelect(id){
+  const sel=document.getElementById(id); const cur=sel.value;
+  const years=[...new Set(DB.mov.map(m=>yearOf(m.data)).filter(Boolean))].sort().reverse();
+  const ty=today().slice(0,4); if(!years.includes(ty))years.unshift(ty);
+  const allow = id==="movYearF";
+  sel.innerHTML=(allow?'<option value="">Tutti gli anni</option>':"")+years.map(y=>`<option ${y===cur?"selected":""}>${y}</option>`).join("");
+  if(cur&&years.includes(cur))sel.value=cur;
+}
+function fillSocioSelect(){
+  const sel=document.getElementById("qSocio");
+  sel.innerHTML=DB.soci.length?DB.soci.map(s=>`<option value="${s.id}">${esc(s.nome)} (tess. ${esc(s.tessera)})</option>`).join("")
+    :'<option value="">— nessun socio: aggiungine in sezione Soci —</option>';
+}
+
+function renderAll(){ renderOrgHeader(); renderDash(); renderSoci(); fillSocioSelect(); renderQuote(); renderMov(); renderEventi(); renderRendiconto(); }
+function initForms(){
+  const o=DB.org;
+  document.getElementById("orgName").value=o.name||"";
+  document.getElementById("orgFiscal").value=o.fiscal||"";
+  document.getElementById("orgSede").value=o.sede||"";
+  document.getElementById("orgRapp").value=o.rapp||"";
+  document.getElementById("sData").value=today();
+  document.getElementById("qData").value=today();
+  document.getElementById("mData").value=today();
+  document.getElementById("eData").value=today();
+  syncCausali();
+}
+
+// ---------- AUTENTICAZIONE E AVVIO ----------
+let _authReady=false;
+
+window.doLogin=function(){
+  const email=val("loginEmail"), pwd=document.getElementById("loginPwd").value;
+  const err=document.getElementById("loginErr"); err.style.display="none";
+  if(!email||!pwd){err.textContent="Inserisci email e password.";err.style.display="block";return;}
+  window.FB.login(email,pwd).catch(e=>{
+    err.textContent = (e.code==="auth/invalid-credential"||e.code==="auth/wrong-password"||e.code==="auth/user-not-found")
+      ? "Credenziali non valide." : "Errore di accesso: "+e.message;
+    err.style.display="block";
+  });
+};
+window.doLogout=function(){ if(confirm("Uscire dall'applicazione?")) window.FB.logout(); };
+
+function startApp(){
+  window.FB.onAuth(async (user)=>{
+    if(user){
+      // utente autenticato: nascondi login, carica dati dal cloud
+      document.getElementById("loginScreen").style.display="none";
+      setSync("load");
+      try{
+        const cloud=await window.FB.loadCloud();
+        if(cloud) DB=cloud;
+        _authReady=true;
+        initForms(); renderAll(); setSync("ok");
+      }catch(e){ console.error(e); setSync("err"); alert("Impossibile caricare i dati dal cloud: "+e.message); }
+    }else{
+      // non autenticato: mostra login
+      _authReady=false;
+      document.getElementById("loginScreen").style.display="flex";
+    }
+  });
+}
+
+// Attende che il modulo Firebase sia pronto, poi avvia
+if(window.FB){ startApp(); }
+else { window.addEventListener("fb-ready", startApp, {once:true}); }
+</script>
+</body>
+</html>
