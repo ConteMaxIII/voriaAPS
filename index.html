@@ -225,7 +225,17 @@
         <div class="card"><div class="lbl">Soci in regola</div><div class="val" id="dRegola" style="color:var(--green)">0</div></div>
         <div class="card"><div class="lbl">Entrate <span id="dInYr"></span></div><div class="val" id="dIn" style="color:var(--green)">€ 0</div></div>
         <div class="card"><div class="lbl">Uscite <span id="dOutYr"></span></div><div class="val" id="dOut" style="color:var(--red)">€ 0</div></div>
-        <div class="card"><div class="lbl">Saldo di cassa (totale)</div><div class="val" id="dBal">€ 0</div></div>
+        <div class="card">
+          <div class="lbl" style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+            <span>Saldo</span>
+            <select id="dBalMode" onchange="renderDash()" style="width:auto;padding:2px 6px;font-size:11px;border-radius:6px">
+              <option value="attuale">Attuale</option>
+              <option value="anno">Per annualità</option>
+            </select>
+          </div>
+          <div class="val" id="dBal">€ 0</div>
+          <div class="muted" id="dBalNote" style="font-size:11px;margin-top:4px"></div>
+        </div>
       </div>
       <div class="panel">
         <h3>Entrate / Uscite <span class="muted" id="dYearLbl"></span></h3>
@@ -932,11 +942,16 @@ function renderDash(){
   const totOut=DB.mov.filter(m=>m.tipo==="out").reduce((a,b)=>a+b.importo,0);
   document.getElementById("dIn").textContent=eur(inY);
   document.getElementById("dOut").textContent=eur(outY);
-  const bal=totIn-totOut;
+  // Saldo: due modalità — "attuale" (cumulativo di tutti gli anni) o "anno" (solo annualità selezionata)
+  const balTot=totIn-totOut;     // cassa reale a oggi
+  const balY=inY-outY;           // risultato del solo anno selezionato
+  const mode=(document.getElementById("dBalMode")||{}).value || "attuale";
+  const bal = mode==="anno" ? balY : balTot;
   const db=document.getElementById("dBal"); db.textContent=eur(bal);
   db.style.color=bal>=0?"var(--green)":"var(--red)";
+  const note=document.getElementById("dBalNote");
+  if(note) note.textContent = mode==="anno" ? ("Entrate − uscite "+y) : "Cassa cumulativa a oggi";
   // barre: entrate e uscite dell'anno selezionato, più saldo dell'anno
-  const balY=inY-outY;
   const mx=Math.max(inY,outY,Math.abs(balY),1);
   const bar=(v,col,lbl)=>{const h=Math.round(Math.abs(v)/mx*160)+2;
     return `<div class="bar-col"><div class="bar-val">${eur(v)}</div><div class="bar" style="height:${h}px;background:${col}"></div><div class="bar-lbl">${lbl}</div></div>`;};
