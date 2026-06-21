@@ -134,8 +134,6 @@
     from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import { getFirestore, doc, getDoc, setDoc }
     from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-  import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject }
-    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
   // >>>>>> INCOLLA QUI IL TUO firebaseConfig <<<<<<
   const firebaseConfig = {
@@ -150,7 +148,6 @@
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
-  const storage = getStorage(app);
   // Documento unico che contiene tutti i dati dell'associazione
   const DOC = doc(db, "associazione", "dati");
 
@@ -160,9 +157,7 @@
     logout: () => signOut(auth),
     onAuth: (cb) => onAuthStateChanged(auth, cb),
     loadCloud: async () => { const s = await getDoc(DOC); return s.exists() ? s.data().payload : null; },
-    saveCloud: async (data) => { await setDoc(DOC, { payload: data, updatedAt: Date.now() }); },
-    uploadFile: async (path, file) => { const r = ref(storage, path); await uploadBytes(r, file); return await getDownloadURL(r); },
-    deleteFile: async (path) => { try { await deleteObject(ref(storage, path)); } catch(e){ console.warn("delete file:", e.message); } }
+    saveCloud: async (data) => { await setDoc(DOC, { payload: data, updatedAt: Date.now() }); }
   };
   window.dispatchEvent(new Event("fb-ready"));
 </script>
@@ -221,15 +216,19 @@
     <section class="page active" id="p-dash">
       <h2 class="pt">Riepilogo</h2>
       <p class="pd">Quadro sintetico della situazione associativa e di cassa.</p>
+      <div class="toolbar">
+        <label class="f" style="margin:0">Anno di riferimento&nbsp;</label>
+        <select id="dashYear" onchange="renderDash()"></select>
+      </div>
       <div class="cards">
         <div class="card"><div class="lbl">Soci totali</div><div class="val" id="dSoci">0</div></div>
         <div class="card"><div class="lbl">Soci in regola</div><div class="val" id="dRegola" style="color:var(--green)">0</div></div>
-        <div class="card"><div class="lbl">Entrate anno</div><div class="val" id="dIn" style="color:var(--green)">€ 0</div></div>
-        <div class="card"><div class="lbl">Uscite anno</div><div class="val" id="dOut" style="color:var(--red)">€ 0</div></div>
-        <div class="card"><div class="lbl">Saldo di cassa</div><div class="val" id="dBal">€ 0</div></div>
+        <div class="card"><div class="lbl">Entrate <span id="dInYr"></span></div><div class="val" id="dIn" style="color:var(--green)">€ 0</div></div>
+        <div class="card"><div class="lbl">Uscite <span id="dOutYr"></span></div><div class="val" id="dOut" style="color:var(--red)">€ 0</div></div>
+        <div class="card"><div class="lbl">Saldo di cassa (totale)</div><div class="val" id="dBal">€ 0</div></div>
       </div>
       <div class="panel">
-        <h3>Entrate / Uscite / Saldo <span class="muted" id="dYearLbl"></span></h3>
+        <h3>Entrate / Uscite <span class="muted" id="dYearLbl"></span></h3>
         <div class="bar-wrap" id="dBars"></div>
       </div>
       <div class="panel">
@@ -394,23 +393,32 @@
     <!-- DOCUMENTI -->
     <section class="page" id="p-documenti">
       <h2 class="pt">Documenti</h2>
-      <p class="pd">Archivio dei documenti dell'associazione (statuto, verbali, atti). I file sono caricati su Firebase Storage e accessibili a tutti gli operatori.</p>
+      <p class="pd">Indice dei documenti dell'associazione (statuto, verbali, atti). I file restano nel tuo spazio (Google Drive, OneDrive o altro): qui registri il <b>link di condivisione</b>, così tutti gli operatori vi accedono da un unico elenco ordinato.</p>
       <div class="panel">
-        <h3>Carica documento</h3>
-        <div class="formgrid" style="grid-template-columns:1.4fr 1fr 1.4fr">
+        <h3>Aggiungi documento</h3>
+        <div class="formgrid" style="grid-template-columns:1.3fr 1fr 1fr">
           <div><label class="f">Titolo / descrizione *</label><input id="docTitolo" placeholder="Statuto sociale"></div>
           <div><label class="f">Categoria</label><select id="docCat">
             <option>Statuto</option><option>Atto costitutivo</option><option>Verbale</option>
             <option>Bilancio</option><option>Contratto</option><option>Modulistica</option><option>Altro</option></select></div>
-          <div><label class="f">File *</label><input id="docFile" type="file"></div>
+          <div><label class="f">Fonte</label><select id="docFonte">
+            <option>Google Drive</option><option>OneDrive</option><option>Altro</option></select></div>
+        </div>
+        <div class="formgrid" style="grid-template-columns:1fr;margin-top:12px">
+          <div><label class="f">Link di condivisione *</label><input id="docUrl" placeholder="https://drive.google.com/... oppure https://...sharepoint.com/..."></div>
         </div>
         <div class="row-actions">
-          <button class="btn" id="docUploadBtn" onclick="uploadDoc()">⬆ Carica documento</button>
+          <button class="btn" onclick="addDoc()">+ Aggiungi al registro</button>
           <span id="docProgress" class="muted" style="align-self:center"></span>
         </div>
+        <p class="muted" style="font-size:12px;margin:12px 0 0">Suggerimento: su Google Drive/OneDrive imposta il link in condivisione (almeno "chiunque abbia il link può visualizzare", oppure condiviso con gli operatori) prima di incollarlo qui.</p>
+      </div>
+      <div class="toolbar">
+        <select id="docCatF" onchange="renderDocumenti()"><option value="">Tutte le categorie</option></select>
+        <input id="docFilter" placeholder="🔍 Cerca documento..." oninput="renderDocumenti()">
       </div>
       <div class="panel" style="padding:0;overflow:auto">
-        <table><thead><tr><th>Documento</th><th>Categoria</th><th>Caricato il</th><th>Dimensione</th><th></th></tr></thead>
+        <table><thead><tr><th>Documento</th><th>Categoria</th><th>Fonte</th><th>Aggiunto il</th><th></th></tr></thead>
         <tbody id="documentiBody"></tbody></table>
       </div>
     </section>
@@ -843,49 +851,79 @@ function renderProgetti(){
   }).join(""):`<tr><td colspan="7" class="empty">Nessun progetto registrato.</td></tr>`;
 }
 
-// ---------- DOCUMENTI ----------
-function fmtSize(b){ if(b<1024)return b+" B"; if(b<1048576)return (b/1024).toFixed(0)+" KB"; return (b/1048576).toFixed(1)+" MB"; }
-async function uploadDoc(){
-  const titolo=val("docTitolo"); const fileInput=document.getElementById("docFile");
-  const file=fileInput.files[0];
-  if(!titolo){flash("docTitolo");return;}
-  if(!file){alert("Seleziona un file da caricare.");return;}
-  if(file.size>20*1024*1024){alert("File troppo grande (max 20 MB).");return;}
-  const btn=document.getElementById("docUploadBtn"); const prog=document.getElementById("docProgress");
-  btn.disabled=true; prog.textContent="Caricamento in corso…";
-  try{
-    const path="documenti/"+Date.now()+"_"+file.name.replace(/[^\w.\-]/g,"_");
-    const url=await window.FB.uploadFile(path, file);
-    DB.documenti.push({id:uid(),titolo,categoria:val("docCat"),nome:file.name,
-      size:file.size,path,url,data:today()});
-    clr("docTitolo"); fileInput.value="";
-    prog.textContent="✓ Caricato"; setTimeout(()=>prog.textContent="",2500);
-    save(); renderDocumenti();
-  }catch(e){ console.error(e); prog.textContent=""; alert("Errore nel caricamento: "+e.message); }
-  finally{ btn.disabled=false; }
+// ---------- DOCUMENTI (registro a link: Drive / OneDrive / altro) ----------
+function normUrl(u){
+  u=(u||"").trim();
+  if(u && !/^https?:\/\//i.test(u)) u="https://"+u;
+  return u;
 }
-async function delDoc(id){
+function addDoc(){
+  const titolo=val("docTitolo"); const url=normUrl(val("docUrl"));
+  if(!titolo){flash("docTitolo");return;}
+  if(!url){flash("docUrl");return;}
+  try{ new URL(url); }catch(e){ alert("Il link non sembra valido. Controlla l'indirizzo."); flash("docUrl"); return; }
+  DB.documenti.push({id:uid(),titolo,categoria:val("docCat"),fonte:val("docFonte"),url,data:today()});
+  ["docTitolo","docUrl"].forEach(clr);
+  const prog=document.getElementById("docProgress");
+  if(prog){ prog.textContent="✓ Aggiunto"; setTimeout(()=>prog.textContent="",2000); }
+  save(); renderDocumenti();
+}
+function editDoc(id){
   const d=DB.documenti.find(x=>x.id===id); if(!d)return;
-  if(!confirm("Eliminare il documento «"+d.titolo+"»? Verrà rimosso anche il file."))return;
-  if(d.path && window.FB) await window.FB.deleteFile(d.path);
+  openEdit("Modifica documento",[
+    {k:"titolo",l:"Titolo / descrizione *",v:d.titolo},
+    {k:"categoria",l:"Categoria",v:d.categoria,opt:["Statuto","Atto costitutivo","Verbale","Bilancio","Contratto","Modulistica","Altro"]},
+    {k:"fonte",l:"Fonte",v:d.fonte,opt:["Google Drive","OneDrive","Altro"]},
+    {k:"url",l:"Link di condivisione *",v:d.url}
+  ], vals=>{
+    if(!vals.titolo.trim()){alert("Titolo obbligatorio.");return false;}
+    const u=normUrl(vals.url);
+    try{ new URL(u); }catch(e){ alert("Link non valido."); return false; }
+    d.titolo=vals.titolo; d.categoria=vals.categoria; d.fonte=vals.fonte; d.url=u;
+    save(); renderDocumenti(); return true;
+  });
+}
+function delDoc(id){
+  const d=DB.documenti.find(x=>x.id===id); if(!d)return;
+  if(!confirm("Rimuovere «"+d.titolo+"» dal registro? Il file nel tuo spazio cloud NON viene toccato."))return;
   DB.documenti=DB.documenti.filter(x=>x.id!==id); save(); renderDocumenti();
 }
 function renderDocumenti(){
   const b=document.getElementById("documentiBody"); if(!b)return;
-  const list=DB.documenti.slice().sort((a,b)=>(b.data||"").localeCompare(a.data||""));
+  // popola filtro categorie
+  const cats=[...new Set(DB.documenti.map(d=>d.categoria).filter(Boolean))];
+  const selF=document.getElementById("docCatF");
+  if(selF){ const cur=selF.value; selF.innerHTML='<option value="">Tutte le categorie</option>'+cats.map(c=>`<option ${c===cur?"selected":""}>${esc(c)}</option>`).join(""); }
+  const cf=val("docCatF"), f=(val("docFilter")||"").toLowerCase();
+  let list=DB.documenti.filter(d=>(!cf||d.categoria===cf)&&(!f||d.titolo.toLowerCase().includes(f)));
+  list.sort((a,b)=>(b.data||"").localeCompare(a.data||""));
   b.innerHTML=list.length?list.map(d=>
-    `<tr><td><a href="${esc(d.url)}" target="_blank" rel="noopener"><b>${esc(d.titolo)}</b></a>
-      <div class="muted" style="font-size:11px">${esc(d.nome||"")}</div></td>
-    <td>${esc(d.categoria||"—")}</td><td>${fmtDate(d.data)}</td><td class="muted">${fmtSize(d.size||0)}</td>
-    <td style="white-space:nowrap"><a class="iconbtn" href="${esc(d.url)}" target="_blank" rel="noopener" title="Apri" style="text-decoration:none">⬇</a>
+    `<tr><td><a href="${esc(d.url)}" target="_blank" rel="noopener"><b>${esc(d.titolo)}</b></a></td>
+    <td>${esc(d.categoria||"—")}</td><td class="muted">${esc(d.fonte||"—")}</td><td>${fmtDate(d.data)}</td>
+    <td style="white-space:nowrap"><a class="iconbtn" href="${esc(d.url)}" target="_blank" rel="noopener" title="Apri" style="text-decoration:none">↗</a>
+      <button class="iconbtn" onclick="editDoc(${d.id})" title="Modifica">✎</button>
       <button class="iconbtn" onclick="delDoc(${d.id})">🗑</button></td></tr>`).join("")
-    :`<tr><td colspan="5" class="empty">Nessun documento caricato.</td></tr>`;
+    :`<tr><td colspan="5" class="empty">Nessun documento nel registro. Aggiungi il link di un file da Drive o OneDrive.</td></tr>`;
 }
 
 // ---------- DASHBOARD ----------
 function renderDash(){
-  const y=today().slice(0,4);
+  // popola il selettore anni con tutti gli anni presenti nei movimenti + anno corrente
+  const cur=today().slice(0,4);
+  const years=[...new Set(DB.mov.map(m=>yearOf(m.data)).filter(Boolean))];
+  if(!years.includes(cur)) years.push(cur);
+  years.sort().reverse();
+  const sel=document.getElementById("dashYear");
+  let y=cur;
+  if(sel){
+    const prev=sel.value;
+    sel.innerHTML=years.map(yr=>`<option ${yr===prev?"selected":""}>${yr}</option>`).join("");
+    y = (prev && years.includes(prev)) ? prev : cur;
+    sel.value=y;
+  }
   document.getElementById("dYearLbl").textContent="("+y+")";
+  const inYr=document.getElementById("dInYr"); if(inYr) inYr.textContent=y;
+  const outYr=document.getElementById("dOutYr"); if(outYr) outYr.textContent=y;
   document.getElementById("dSoci").textContent=DB.soci.length;
   document.getElementById("dRegola").textContent=DB.soci.filter(s=>memberStatus(s.id).cls==="ok").length;
   const inY=DB.mov.filter(m=>m.tipo==="in"&&yearOf(m.data)===y).reduce((a,b)=>a+b.importo,0);
@@ -897,11 +935,12 @@ function renderDash(){
   const bal=totIn-totOut;
   const db=document.getElementById("dBal"); db.textContent=eur(bal);
   db.style.color=bal>=0?"var(--green)":"var(--red)";
-  // barre
-  const mx=Math.max(inY,outY,Math.abs(bal),1);
+  // barre: entrate e uscite dell'anno selezionato, più saldo dell'anno
+  const balY=inY-outY;
+  const mx=Math.max(inY,outY,Math.abs(balY),1);
   const bar=(v,col,lbl)=>{const h=Math.round(Math.abs(v)/mx*160)+2;
     return `<div class="bar-col"><div class="bar-val">${eur(v)}</div><div class="bar" style="height:${h}px;background:${col}"></div><div class="bar-lbl">${lbl}</div></div>`;};
-  document.getElementById("dBars").innerHTML=bar(inY,"#1d9e75","Entrate")+bar(outY,"#d85a30","Uscite")+bar(bal,"#185fa5","Saldo cassa");
+  document.getElementById("dBars").innerHTML=bar(inY,"#1d9e75","Entrate "+y)+bar(outY,"#d85a30","Uscite "+y)+bar(balY,"#185fa5","Saldo "+y);
   // scadenze
   const rows=[];
   DB.soci.forEach(s=>{const st=memberStatus(s.id); if(st.cls!=="ok"){
