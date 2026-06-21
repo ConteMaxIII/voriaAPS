@@ -110,16 +110,6 @@
   .footer-note{font-size:12px;color:var(--muted);text-align:center;padding:20px;border-top:1px solid var(--border);margin-top:10px}
   @media(max-width:760px){.layout{flex-direction:column}nav{width:100%;display:flex;overflow-x:auto;border-right:none;border-bottom:1px solid var(--border)}nav button{width:auto;white-space:nowrap}}
   @media print{header,nav,.no-print{display:none!important}main{max-width:none}}
-  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
-  .cal-head{text-align:center;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:4px 0}
-  .cal-cell{min-height:84px;border:1px solid var(--border);border-radius:8px;padding:5px;background:var(--surface2);display:flex;flex-direction:column;gap:3px}
-  .cal-empty{background:transparent;border:none}
-  .cal-num{font-size:12px;font-weight:600;color:var(--muted)}
-  .cal-today{border-color:var(--accent);box-shadow:0 0 0 2px rgba(29,110,86,.15)}
-  .cal-today .cal-num{color:var(--accent)}
-  .cal-ev{background:#e9f3ef;color:var(--accent);font-size:11px;font-weight:600;padding:3px 6px;border-radius:6px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .cal-ev:hover{background:#d8ebe3}
-  @media(max-width:760px){.cal-cell{min-height:56px}.cal-ev{font-size:10px}}
 </style>
 </head>
 <body>
@@ -138,12 +128,12 @@
 
   // >>>>>> INCOLLA QUI IL TUO firebaseConfig <<<<<<
   const firebaseConfig = {
-    apiKey: "AIzaSyAAAsE9Lv4xnW506xixPKb_xcx5BvKWtg4",
-    authDomain: "voriaaps.firebaseapp.com",
-    projectId: "voriaaps",
-    storageBucket: "voriaaps.firebasestorage.app",
-    messagingSenderId: "355267489498",
-    appId: "1:355267489498:web:5fb159bd57520b318affe3"
+    apiKey: "INSERISCI_LA_TUA_API_KEY",
+    authDomain: "INSERISCI.firebaseapp.com",
+    projectId: "INSERISCI_PROJECT_ID",
+    storageBucket: "INSERISCI.appspot.com",
+    messagingSenderId: "INSERISCI",
+    appId: "INSERISCI"
   };
 
   const app = initializeApp(firebaseConfig);
@@ -157,7 +147,6 @@
     login: (email, pwd) => signInWithEmailAndPassword(auth, email, pwd),
     logout: () => signOut(auth),
     onAuth: (cb) => onAuthStateChanged(auth, cb),
-    currentUser: () => auth.currentUser ? (auth.currentUser.email || auth.currentUser.uid) : "?",
     loadCloud: async () => { const s = await getDoc(DOC); return s.exists() ? s.data().payload : null; },
     saveCloud: async (data) => { await setDoc(DOC, { payload: data, updatedAt: Date.now() }); }
   };
@@ -206,11 +195,7 @@
     <button data-p="quote"><span class="ic">€</span> Quote</button>
     <button data-p="movimenti"><span class="ic">⇅</span> Entrate / Uscite</button>
     <button data-p="eventi"><span class="ic">◷</span> Eventi</button>
-    <button data-p="calendario"><span class="ic">📅</span> Calendario</button>
-    <button data-p="documenti"><span class="ic">🗂</span> Documenti</button>
-    <button data-p="progetti"><span class="ic">📁</span> Progetti</button>
     <button data-p="rendiconto"><span class="ic">▤</span> Rendiconto</button>
-    <button data-p="registro"><span class="ic">🛡</span> Registro attività</button>
     <button data-p="impostazioni"><span class="ic">⚙</span> Impostazioni</button>
   </nav>
 
@@ -339,86 +324,6 @@
       </div>
     </section>
 
-    <!-- CALENDARIO -->
-    <section class="page" id="p-calendario">
-      <h2 class="pt">Calendario</h2>
-      <p class="pd">Vista mensile degli eventi dell'associazione. Gli eventi si creano e si modificano nella sezione Eventi; qui sono visualizzati nel mese di competenza.</p>
-      <div class="toolbar no-print">
-        <button class="btn gray" onclick="calMove(-1)">‹ Mese precedente</button>
-        <b id="calTitle" style="min-width:180px;text-align:center"></b>
-        <button class="btn gray" onclick="calMove(1)">Mese successivo ›</button>
-        <button class="btn ghost" onclick="calToday()">Oggi</button>
-      </div>
-      <div class="panel" id="calPanel" style="overflow:auto"></div>
-    </section>
-
-    <!-- DOCUMENTI ISTITUZIONALI -->
-    <section class="page" id="p-documenti">
-      <h2 class="pt">Documenti istituzionali</h2>
-      <p class="pd">Archivio dei documenti istituzionali (statuto, atto costitutivo, verbali, bilanci, libri sociali). Si registrano titolo, tipo, data e il collegamento al file su Google Drive o altra risorsa web. Il file resta sul tuo Drive; qui si conserva solo il riferimento.</p>
-      <div class="panel">
-        <h3>Nuovo documento</h3>
-        <div class="formgrid" style="grid-template-columns:1.6fr 1.2fr 1fr">
-          <div><label class="f">Titolo *</label><input id="dTitolo" placeholder="Statuto vigente"></div>
-          <div><label class="f">Tipo</label><select id="dTipo">
-            <option>Statuto</option><option>Atto costitutivo</option><option>Verbale assemblea</option>
-            <option>Verbale consiglio</option><option>Bilancio / Rendiconto</option><option>Libro soci</option>
-            <option>Registro volontari</option><option>Certificazione / Iscrizione</option>
-            <option>Regolamento</option><option>Altro</option></select></div>
-          <div><label class="f">Data documento</label><input id="dData" type="date"></div>
-        </div>
-        <div class="formgrid" style="grid-template-columns:2fr 1fr;margin-top:12px">
-          <div><label class="f">Link al file (Google Drive / web) *</label><input id="dLink" placeholder="https://drive.google.com/..."></div>
-          <div><label class="f">Note</label><input id="dNote" placeholder="es. approvato il..."></div>
-        </div>
-        <div class="row-actions"><button class="btn" onclick="addDoc()">+ Aggiungi documento</button></div>
-      </div>
-      <div class="toolbar">
-        <select id="docTipoF" onchange="renderDocs()"><option value="">Tutti i tipi</option></select>
-        <input id="docFilter" placeholder="🔍 Cerca titolo..." oninput="renderDocs()">
-      </div>
-      <div class="panel" style="padding:0;overflow:auto">
-        <table><thead><tr><th>Data</th><th>Titolo</th><th>Tipo</th><th>Note</th><th>File</th><th></th></tr></thead>
-        <tbody id="docBody"></tbody></table>
-      </div>
-    </section>
-
-    <!-- PROGETTI -->
-    <section class="page" id="p-progetti">
-      <h2 class="pt">Progetti</h2>
-      <p class="pd">Registro dei progetti dell'associazione — in corso, finanziati, rendicontati — con ente finanziatore, importo, stato e collegamento alla cartella o al dossier su Google Drive o altra risorsa web.</p>
-      <div class="panel">
-        <h3>Nuovo progetto</h3>
-        <div class="formgrid" style="grid-template-columns:1.6fr 1.4fr 1fr">
-          <div><label class="f">Titolo progetto *</label><input id="pTitolo" placeholder="Bando volontariato 2026"></div>
-          <div><label class="f">Ente finanziatore</label><input id="pEnte" placeholder="Regione / Fondazione / PNRR..."></div>
-          <div><label class="f">Stato</label><select id="pStato">
-            <option>In corso</option><option>Finanziato</option><option>Rendicontato</option>
-            <option>In valutazione</option><option>Concluso</option><option>Non finanziato</option></select></div>
-        </div>
-        <div class="formgrid" style="grid-template-columns:1fr 1fr 1fr 2fr;margin-top:12px">
-          <div><label class="f">Importo €</label><input id="pImporto" type="number" min="0" step="0.01" placeholder="50000.00"></div>
-          <div><label class="f">Inizio</label><input id="pInizio" type="date"></div>
-          <div><label class="f">Fine</label><input id="pFine" type="date"></div>
-          <div><label class="f">Link cartella / dossier (Drive / web)</label><input id="pLink" placeholder="https://drive.google.com/..."></div>
-        </div>
-        <div class="formgrid" style="grid-template-columns:1fr;margin-top:12px">
-          <div><label class="f">Note</label><input id="pNote" placeholder="CUP, riferimenti, scadenze..."></div>
-        </div>
-        <div class="row-actions"><button class="btn" onclick="addProg()">+ Aggiungi progetto</button></div>
-      </div>
-      <div class="toolbar">
-        <select id="progStatoF" onchange="renderProg()"><option value="">Tutti gli stati</option>
-          <option>In corso</option><option>Finanziato</option><option>Rendicontato</option>
-          <option>In valutazione</option><option>Concluso</option><option>Non finanziato</option></select>
-        <input id="progFilter" placeholder="🔍 Cerca progetto o ente..." oninput="renderProg()">
-      </div>
-      <div class="panel" style="padding:0;overflow:auto">
-        <table><thead><tr><th>Titolo</th><th>Ente</th><th>Importo</th><th>Periodo</th><th>Stato</th><th>Dossier</th><th></th></tr></thead>
-        <tbody id="progBody"></tbody></table>
-      </div>
-    </section>
-
     <!-- RENDICONTO -->
     <section class="page" id="p-rendiconto">
       <h2 class="pt">Rendiconto per cassa</h2>
@@ -430,40 +335,6 @@
         <button class="btn ghost" onclick="exportCSV()">⬇ Esporta CSV</button>
       </div>
       <div class="panel" id="rendBox"></div>
-    </section>
-
-    <!-- REGISTRO ATTIVITÀ (AUDIT LOG) -->
-    <section class="page" id="p-registro">
-      <h2 class="pt">Registro attività</h2>
-      <p class="pd">Tracciamento di tutte le operazioni: ogni voce indica chi era autenticato, l'azione svolta, l'elemento interessato e la data/ora. Il registro non è modificabile.</p>
-      <div class="toolbar no-print">
-        <select id="logAzioneF" onchange="renderAudit()">
-          <option value="">Tutte le azioni</option>
-          <option value="creazione">Creazioni</option>
-          <option value="modifica">Modifiche</option>
-          <option value="eliminazione">Eliminazioni</option>
-          <option value="accesso">Accessi</option>
-          <option value="sistema">Sistema</option>
-        </select>
-        <select id="logEntitaF" onchange="renderAudit()">
-          <option value="">Tutti gli ambiti</option>
-          <option value="Socio">Soci</option>
-          <option value="Quota">Quote</option>
-          <option value="Movimento">Movimenti</option>
-          <option value="Evento">Eventi</option>
-          <option value="Documento">Documenti</option>
-          <option value="Progetto">Progetti</option>
-          <option value="Associazione">Associazione</option>
-          <option value="Sessione">Sessione</option>
-          <option value="Dati">Dati</option>
-        </select>
-        <input id="logFilter" placeholder="🔍 Cerca operatore o dettaglio..." oninput="renderAudit()">
-        <button class="btn ghost" onclick="exportAuditCSV()">⬇ Esporta CSV</button>
-      </div>
-      <div class="panel" style="padding:0;overflow:auto">
-        <table><thead><tr><th>Data e ora</th><th>Operatore</th><th>Azione</th><th>Ambito</th><th>Dettaglio</th></tr></thead>
-        <tbody id="auditBody"></tbody></table>
-      </div>
     </section>
 
     <!-- IMPOSTAZIONI -->
@@ -506,7 +377,24 @@
 "use strict";
 // ---------- Stato e persistenza ----------
 const KEY = "assomanager_v1";
-let DB = { org:{}, soci:[], quote:[], mov:[], eventi:[], documenti:[], progetti:[], audit:[], counters:{tessera:1, ricevuta:1} };
+let DB = { org:{}, soci:[], quote:[], mov:[], eventi:[], counters:{tessera:1, ricevuta:1} };
+
+// Garantisce che l'oggetto caricato dal cloud abbia sempre tutti i campi attesi.
+// Evita errori tipo "Cannot read properties of undefined (reading 'map')"
+// quando il documento Firestore è parziale o creato a mano.
+function normalizeDB(d){
+  d = d && typeof d==="object" ? d : {};
+  return {
+    org:      (d.org && typeof d.org==="object") ? d.org : {},
+    soci:     Array.isArray(d.soci)     ? d.soci     : [],
+    quote:    Array.isArray(d.quote)    ? d.quote    : [],
+    mov:      Array.isArray(d.mov)      ? d.mov      : [],
+    eventi:   Array.isArray(d.eventi)   ? d.eventi   : [],
+    counters: (d.counters && typeof d.counters==="object")
+                ? { tessera: d.counters.tessera||1, ricevuta: d.counters.ricevuta||1 }
+                : { tessera:1, ricevuta:1 }
+  };
+}
 const CAUSALI_IN = ["Quote associative","Contributi pubblici","Erogazioni liberali","Raccolta fondi","Attività di interesse generale","Altre entrate"];
 const CAUSALI_OUT= ["Affitti e utenze","Materiali e forniture","Servizi","Personale e collaborazioni","Spese eventi","Spese amministrative","Imposte e tasse","Altre uscite"];
 
@@ -536,88 +424,6 @@ const yearOf = d => (d||"").slice(0,4);
 const fmtDate = d => { if(!d) return "—"; const p=d.split("-"); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:d; };
 const uid = () => Date.now()+Math.floor(Math.random()*1000);
 
-// ---------- REGISTRO ATTIVITÀ (AUDIT LOG) ----------
-// Registra un'operazione nel registro. L'operatore viene letto dalla
-// sessione Firebase autenticata (non manipolabile dal client).
-function logAudit(azione, entita, dettaglio){
-  if(!DB.audit) DB.audit=[];
-  const operatore = (window.FB && window.FB.currentUser) ? window.FB.currentUser() : "?";
-  DB.audit.push({
-    id: uid(),
-    ts: new Date().toISOString(),
-    operatore,
-    azione,        // creazione | modifica | eliminazione | accesso | sistema
-    entita,        // Socio | Quota | Movimento | Evento | Associazione | Sessione | Dati
-    dettaglio: dettaglio||""
-  });
-  // tetto di sicurezza: conserva le ultime 5000 voci
-  if(DB.audit.length>5000) DB.audit=DB.audit.slice(-5000);
-}
-// Costruisce una stringa "campo: prima → dopo" elencando solo i campi cambiati
-function diffFields(before, after, labels){
-  const parts=[];
-  Object.keys(labels).forEach(k=>{
-    const a=(before&&before[k]!=null)?String(before[k]):"";
-    const b=(after&&after[k]!=null)?String(after[k]):"";
-    if(a!==b) parts.push(`${labels[k]}: "${a||"—"}" → "${b||"—"}"`);
-  });
-  return parts.join("; ");
-}
-const fmtTs = iso => { if(!iso) return "—"; const d=new Date(iso);
-  return d.toLocaleString("it-IT",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}); };
-
-function renderAudit(){
-  const af=val("logAzioneF"), ef=val("logEntitaF"), f=(val("logFilter")||"").toLowerCase();
-  const list=(DB.audit||[]).slice()
-    .filter(a=>(!af||a.azione===af)&&(!ef||a.entita===ef)&&
-      (!f||(a.operatore||"").toLowerCase().includes(f)||(a.dettaglio||"").toLowerCase().includes(f)))
-    .sort((a,b)=>(b.ts||"").localeCompare(a.ts||""));
-  const azPill={creazione:"ok",modifica:"warn",eliminazione:"bad",accesso:"in",sistema:"warn"};
-  const b=document.getElementById("auditBody");
-  b.innerHTML=list.length? list.map(a=>
-    `<tr><td class="muted" style="white-space:nowrap">${fmtTs(a.ts)}</td>
-     <td><b>${esc(a.operatore)}</b></td>
-     <td><span class="pill ${azPill[a.azione]||"warn"}">${esc(a.azione)}</span></td>
-     <td>${esc(a.entita)}</td>
-     <td class="muted">${esc(a.dettaglio)}</td></tr>`).join("")
-    :`<tr><td colspan="5" class="empty">Nessuna attività registrata.</td></tr>`;
-}
-function exportAuditCSV(){
-  let rows=[["Data e ora","Operatore","Azione","Ambito","Dettaglio"]];
-  (DB.audit||[]).slice().sort((a,b)=>(a.ts||"").localeCompare(b.ts||""))
-    .forEach(a=>rows.push([fmtTs(a.ts),a.operatore,a.azione,a.entita,a.dettaglio]));
-  const csv=rows.map(r=>r.map(c=>'"'+(c==null?"":String(c).replace(/"/g,'""'))+'"').join(";")).join("\n");
-  download("registro_attivita_"+today()+".csv",new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8;"}));
-}
-
-// ---------- MODALE DI MODIFICA GENERICA ----------
-// fields: [{key,label,type,options?}] ; onSave riceve un oggetto coi valori
-function openEditModal(titolo, fields, record, onSave){
-  const body=fields.map(fl=>{
-    const v=record[fl.key]!=null?record[fl.key]:"";
-    if(fl.type==="select"){
-      return `<div style="margin-bottom:12px"><label class="f">${esc(fl.label)}</label>
-        <select id="edit_${fl.key}">${fl.options.map(o=>`<option ${String(o)===String(v)?"selected":""}>${esc(o)}</option>`).join("")}</select></div>`;
-    }
-    const t=fl.type||"text";
-    return `<div style="margin-bottom:12px"><label class="f">${esc(fl.label)}</label>
-      <input id="edit_${fl.key}" type="${t}" ${t==="number"?'step="0.01" min="0"':""} value="${esc(v)}"></div>`;
-  }).join("");
-  document.getElementById("modalContent").innerHTML=`
-    <h3>${esc(titolo)}</h3>
-    <div>${body}</div>
-    <div class="row-actions" style="margin-top:8px">
-      <button class="btn" id="editSaveBtn">💾 Salva modifiche</button>
-      <button class="btn gray" onclick="closeModal()">Annulla</button>
-    </div>`;
-  document.getElementById("editSaveBtn").onclick=()=>{
-    const out={};
-    fields.forEach(fl=>{ out[fl.key]=(document.getElementById("edit_"+fl.key).value||"").trim(); });
-    onSave(out);
-  };
-  document.getElementById("modalBg").classList.add("show");
-}
-
 // ---------- Navigazione ----------
 document.getElementById("nav").addEventListener("click",e=>{
   const b=e.target.closest("button[data-p]"); if(!b) return;
@@ -645,34 +451,11 @@ function addSocio(){
   const tessera = val("sTessera") || String(DB.counters.tessera++);
   DB.soci.push({id:uid(),nome,email:val("sEmail"),cf:val("sCf"),tel:val("sTel"),
     tessera,ruolo:val("sRuolo"),data:val("sData")||today()});
-  logAudit("creazione","Socio",`Nuovo socio "${nome}" (tessera ${tessera})`);
   ["sNome","sEmail","sCf","sTel","sTessera","sData"].forEach(clr);
   save(); renderAll();
 }
-function editSocio(id){
-  const s=DB.soci.find(x=>x.id===id); if(!s)return;
-  openEditModal("Modifica socio",[
-    {key:"nome",label:"Nome e cognome"},
-    {key:"email",label:"Email"},
-    {key:"cf",label:"Codice fiscale"},
-    {key:"tel",label:"Telefono"},
-    {key:"tessera",label:"N. tessera"},
-    {key:"ruolo",label:"Ruolo",type:"select",options:["Socio ordinario","Socio sostenitore","Volontario","Consigliere","Presidente","Vicepresidente","Tesoriere","Segretario"]},
-    {key:"data",label:"Data iscrizione",type:"date"}
-  ], s, (out)=>{
-    if(!out.nome){alert("Il nome è obbligatorio.");return;}
-    const labels={nome:"Nome",email:"Email",cf:"C.F.",tel:"Telefono",tessera:"Tessera",ruolo:"Ruolo",data:"Iscrizione"};
-    const diff=diffFields(s,out,labels);
-    Object.assign(s,out);
-    logAudit("modifica","Socio",`Socio "${s.nome}" — ${diff||"nessuna variazione"}`);
-    save(); renderAll(); closeModal();
-  });
-}
-function delSocio(id){ const s=DB.soci.find(x=>x.id===id);
-  if(!confirm("Eliminare il socio? Le sue quote resteranno registrate come 'socio eliminato'."))return;
-  DB.soci=DB.soci.filter(s=>s.id!==id);
-  logAudit("eliminazione","Socio",`Eliminato socio "${s?s.nome:id}"`);
-  save(); renderAll(); }
+function delSocio(id){ if(!confirm("Eliminare il socio? Le sue quote resteranno registrate come 'socio eliminato'."))return;
+  DB.soci=DB.soci.filter(s=>s.id!==id); save(); renderAll(); }
 function renderSoci(){
   const f=(val("socFilter")||"").toLowerCase(); const rf=val("socRuoloF");
   const ruoli=[...new Set(DB.soci.map(s=>s.ruolo))];
@@ -686,7 +469,7 @@ function renderSoci(){
     return `<tr><td><b>${esc(s.tessera)}</b></td><td>${esc(s.nome)}<div class="muted" style="font-size:11px">${esc(s.cf||"")}</div></td>
       <td>${esc(s.ruolo)}</td><td class="muted">${esc(cont)}</td><td>${fmtDate(s.data)}</td>
       <td>${eur(memberFeesTotal(s.id))}</td><td><span class="pill ${st.cls}">${st.txt}</span></td>
-      <td><button class="iconbtn" onclick="editSocio(${s.id})" title="Modifica">✏️</button><button class="iconbtn" onclick="delSocio(${s.id})" title="Elimina">🗑</button></td></tr>`;
+      <td><button class="iconbtn" onclick="delSocio(${s.id})">🗑</button></td></tr>`;
   }).join("") : `<tr><td colspan="8" class="empty">Nessun socio registrato.</td></tr>`;
 }
 
@@ -700,38 +483,13 @@ function addQuota(){
   DB.quote.push(q);
   // genera entrata collegata in prima nota
   DB.mov.push({id:uid(),tipo:"in",desc:val("qTipo")+" — ric. n."+ric,causale:"Quote associative",importo:imp,data,linkQuota:q.id});
-  const sNome=(DB.soci.find(x=>x.id===sid)||{}).nome||"?";
-  logAudit("creazione","Quota",`Quota "${q.tipo}" di ${eur(imp)} per "${sNome}" (ric. n.${ric})`);
   ["qImporto","qScadenza"].forEach(clr);
   save(); renderAll();
   showReceipt(q);
 }
-function editQuota(id){
-  const q=DB.quote.find(x=>x.id===id); if(!q)return;
-  openEditModal("Modifica quota n. "+q.ricevuta,[
-    {key:"tipo",label:"Tipo quota",type:"select",options:["Quota annuale","Quota semestrale","Quota sostenitore","Iscrizione","Donazione liberale"]},
-    {key:"importo",label:"Importo €",type:"number"},
-    {key:"data",label:"Data versamento",type:"date"},
-    {key:"scadenza",label:"Valida fino al",type:"date"}
-  ], q, (out)=>{
-    const imp=parseFloat(out.importo);
-    if(isNaN(imp)||imp<=0){alert("Importo non valido.");return;}
-    const before={tipo:q.tipo,importo:q.importo,data:q.data,scadenza:q.scadenza};
-    q.tipo=out.tipo; q.importo=imp; q.data=out.data; q.scadenza=out.scadenza;
-    // mantieni allineato il movimento di cassa collegato
-    const m=DB.mov.find(x=>x.linkQuota===q.id);
-    if(m){ m.importo=imp; m.data=q.data; m.desc=q.tipo+" — ric. n."+q.ricevuta; }
-    const diff=diffFields(before,{tipo:q.tipo,importo:q.importo,data:q.data,scadenza:q.scadenza},
-      {tipo:"Tipo",importo:"Importo",data:"Versata",scadenza:"Scadenza"});
-    logAudit("modifica","Quota",`Quota n.${q.ricevuta} — ${diff||"nessuna variazione"}`);
-    save(); renderAll(); closeModal();
-  });
-}
-function delQuota(id){ const q=DB.quote.find(x=>x.id===id);
-  if(!confirm("Eliminare la quota e la relativa entrata in cassa?"))return;
+function delQuota(id){ if(!confirm("Eliminare la quota e la relativa entrata in cassa?"))return;
   DB.quote=DB.quote.filter(q=>q.id!==id);
   DB.mov=DB.mov.filter(m=>m.linkQuota!==id);
-  logAudit("eliminazione","Quota",`Eliminata quota n.${q?q.ricevuta:id} (${q?eur(q.importo):""})`);
   save(); renderAll(); }
 function renderQuote(){
   const b=document.getElementById("quoteBody");
@@ -744,8 +502,7 @@ function renderQuote(){
       <td>${esc(q.tipo)}</td><td style="color:var(--green)">${eur(q.importo)}</td>
       <td>${fmtDate(q.data)}</td><td>${q.scadenza?fmtDate(q.scadenza):"—"}</td><td>${stato}</td>
       <td><button class="iconbtn" onclick='showReceipt(${JSON.stringify(q)})' title="Ricevuta">🧾</button>
-      <button class="iconbtn" onclick="editQuota(${q.id})" title="Modifica">✏️</button>
-      <button class="iconbtn" onclick="delQuota(${q.id})" title="Elimina">🗑</button></td></tr>`;
+      <button class="iconbtn" onclick="delQuota(${q.id})">🗑</button></td></tr>`;
   }).join(""):`<tr><td colspan="8" class="empty">Nessuna quota registrata.</td></tr>`;
 }
 function showReceipt(q){
@@ -788,40 +545,15 @@ function syncCausali(){
 function addMov(){
   const desc=val("mDesc"); const imp=parseFloat(val("mImporto"));
   if(!desc){flash("mDesc");return;} if(isNaN(imp)||imp<=0){flash("mImporto");return;}
-  const tipo=val("mTipo");
-  DB.mov.push({id:uid(),tipo,desc,causale:val("mCausale"),importo:imp,data:val("mData")||today()});
-  logAudit("creazione","Movimento",`${tipo==="in"?"Entrata":"Uscita"} "${desc}" di ${eur(imp)}`);
+  DB.mov.push({id:uid(),tipo:val("mTipo"),desc,causale:val("mCausale"),importo:imp,data:val("mData")||today()});
   ["mDesc","mImporto"].forEach(clr);
   save(); renderAll();
-}
-function editMov(id){
-  const m=DB.mov.find(x=>x.id===id); if(!m)return;
-  if(m.linkQuota){alert("Questo movimento deriva da una quota: modificalo dalla sezione Quote.");return;}
-  openEditModal("Modifica movimento",[
-    {key:"tipo",label:"Tipo",type:"select",options:["out","in"]},
-    {key:"desc",label:"Descrizione"},
-    {key:"causale",label:"Causale (digita o lascia invariata)"},
-    {key:"importo",label:"Importo €",type:"number"},
-    {key:"data",label:"Data",type:"date"}
-  ], m, (out)=>{
-    if(!out.desc){alert("La descrizione è obbligatoria.");return;}
-    const imp=parseFloat(out.importo);
-    if(isNaN(imp)||imp<=0){alert("Importo non valido.");return;}
-    const before={tipo:m.tipo,desc:m.desc,causale:m.causale,importo:m.importo,data:m.data};
-    m.tipo=out.tipo==="in"?"in":"out"; m.desc=out.desc; m.causale=out.causale; m.importo=imp; m.data=out.data;
-    const diff=diffFields(before,{tipo:m.tipo,desc:m.desc,causale:m.causale,importo:m.importo,data:m.data},
-      {tipo:"Tipo",desc:"Descrizione",causale:"Causale",importo:"Importo",data:"Data"});
-    logAudit("modifica","Movimento",`"${m.desc}" — ${diff||"nessuna variazione"}`);
-    save(); renderAll(); closeModal();
-  });
 }
 function delMov(id){
   const m=DB.mov.find(x=>x.id===id);
   if(m&&m.linkQuota){alert("Questo movimento deriva da una quota: eliminalo dalla sezione Quote.");return;}
   if(!confirm("Eliminare il movimento?"))return;
-  DB.mov=DB.mov.filter(x=>x.id!==id);
-  logAudit("eliminazione","Movimento",`Eliminato "${m?m.desc:id}" (${m?eur(m.importo):""})`);
-  save(); renderAll();
+  DB.mov=DB.mov.filter(x=>x.id!==id); save(); renderAll();
 }
 function renderMov(){
   fillYearSelect("movYearF");
@@ -832,7 +564,7 @@ function renderMov(){
   b.innerHTML=list.length? list.map(m=>`<tr><td>${fmtDate(m.data)}</td><td>${esc(m.desc)}</td>
     <td class="muted">${esc(m.causale||"")}</td><td><span class="pill ${m.tipo}">${m.tipo==="in"?"Entrata":"Uscita"}</span></td>
     <td class="right" style="color:${m.tipo==="in"?"var(--green)":"var(--red)"}">${m.tipo==="in"?"+":"−"}${eur(m.importo)}</td>
-    <td><button class="iconbtn" onclick="editMov(${m.id})" title="Modifica">✏️</button><button class="iconbtn" onclick="delMov(${m.id})" title="Elimina">🗑</button></td></tr>`).join("")
+    <td><button class="iconbtn" onclick="delMov(${m.id})">🗑</button></td></tr>`).join("")
     :`<tr><td colspan="6" class="empty">Nessun movimento.</td></tr>`;
 }
 
@@ -840,173 +572,15 @@ function renderMov(){
 function addEvento(){
   const t=val("eTitolo"); if(!t){flash("eTitolo");return;}
   DB.eventi.push({id:uid(),titolo:t,data:val("eData")||today(),luogo:val("eLuogo"),note:val("eNote")});
-  logAudit("creazione","Evento",`Nuovo evento "${t}"`);
-  ["eTitolo","eData","eLuogo","eNote"].forEach(clr); save(); renderEventi(); renderAudit();
+  ["eTitolo","eData","eLuogo","eNote"].forEach(clr); save(); renderEventi();
 }
-function editEvento(id){
-  const e=DB.eventi.find(x=>x.id===id); if(!e)return;
-  openEditModal("Modifica evento",[
-    {key:"titolo",label:"Titolo"},
-    {key:"data",label:"Data",type:"date"},
-    {key:"luogo",label:"Luogo"},
-    {key:"note",label:"Note"}
-  ], e, (out)=>{
-    if(!out.titolo){alert("Il titolo è obbligatorio.");return;}
-    const before={titolo:e.titolo,data:e.data,luogo:e.luogo,note:e.note};
-    Object.assign(e,out);
-    const diff=diffFields(before,e,{titolo:"Titolo",data:"Data",luogo:"Luogo",note:"Note"});
-    logAudit("modifica","Evento",`Evento "${e.titolo}" — ${diff||"nessuna variazione"}`);
-    save(); renderEventi(); closeModal();
-  });
-}
-function delEvento(id){ const e=DB.eventi.find(x=>x.id===id);
-  DB.eventi=DB.eventi.filter(e=>e.id!==id);
-  logAudit("eliminazione","Evento",`Eliminato evento "${e?e.titolo:id}"`);
-  save(); renderEventi(); }
+function delEvento(id){ DB.eventi=DB.eventi.filter(e=>e.id!==id); save(); renderEventi(); }
 function renderEventi(){
   const list=DB.eventi.slice().sort((a,b)=>(b.data||"").localeCompare(a.data||""));
   document.getElementById("eventiBody").innerHTML=list.length? list.map(e=>
     `<tr><td>${fmtDate(e.data)}</td><td><b>${esc(e.titolo)}</b></td><td>${esc(e.luogo||"—")}</td>
-    <td class="muted">${esc(e.note||"")}</td><td><button class="iconbtn" onclick="editEvento(${e.id})" title="Modifica">✏️</button><button class="iconbtn" onclick="delEvento(${e.id})" title="Elimina">🗑</button></td></tr>`).join("")
+    <td class="muted">${esc(e.note||"")}</td><td><button class="iconbtn" onclick="delEvento(${e.id})">🗑</button></td></tr>`).join("")
     :`<tr><td colspan="5" class="empty">Nessun evento in calendario.</td></tr>`;
-}
-
-// ---------- DOCUMENTI ISTITUZIONALI ----------
-function normLink(u){ u=(u||"").trim(); if(u&&!/^https?:\/\//i.test(u)) u="https://"+u; return u; }
-function addDoc(){
-  const t=val("dTitolo"); if(!t){flash("dTitolo");return;}
-  const link=normLink(val("dLink")); if(!link){flash("dLink");return;}
-  DB.documenti.push({id:uid(),titolo:t,tipo:val("dTipo"),data:val("dData")||today(),link,note:val("dNote")});
-  logAudit("creazione","Documento",`Documento "${t}" (${val("dTipo")})`);
-  ["dTitolo","dData","dLink","dNote"].forEach(clr);
-  save(); renderDocs();
-}
-function editDoc(id){
-  const d=DB.documenti.find(x=>x.id===id); if(!d)return;
-  openEditModal("Modifica documento",[
-    {key:"titolo",label:"Titolo"},
-    {key:"tipo",label:"Tipo",type:"select",options:["Statuto","Atto costitutivo","Verbale assemblea","Verbale consiglio","Bilancio / Rendiconto","Libro soci","Registro volontari","Certificazione / Iscrizione","Regolamento","Altro"]},
-    {key:"data",label:"Data documento",type:"date"},
-    {key:"link",label:"Link al file"},
-    {key:"note",label:"Note"}
-  ], d, (out)=>{
-    if(!out.titolo){alert("Il titolo è obbligatorio.");return;}
-    out.link=normLink(out.link); if(!out.link){alert("Il link è obbligatorio.");return;}
-    const before={titolo:d.titolo,tipo:d.tipo,data:d.data,link:d.link,note:d.note};
-    Object.assign(d,out);
-    const diff=diffFields(before,d,{titolo:"Titolo",tipo:"Tipo",data:"Data",link:"Link",note:"Note"});
-    logAudit("modifica","Documento",`Documento "${d.titolo}" — ${diff||"nessuna variazione"}`);
-    save(); renderDocs(); closeModal();
-  });
-}
-function delDoc(id){ const d=DB.documenti.find(x=>x.id===id);
-  if(!confirm("Eliminare il riferimento al documento? Il file su Drive non viene toccato."))return;
-  DB.documenti=DB.documenti.filter(x=>x.id!==id);
-  logAudit("eliminazione","Documento",`Eliminato riferimento "${d?d.titolo:id}"`);
-  save(); renderDocs(); }
-function renderDocs(){
-  const tipi=[...new Set(DB.documenti.map(d=>d.tipo).filter(Boolean))];
-  const sel=document.getElementById("docTipoF"); const cur=sel.value;
-  sel.innerHTML='<option value="">Tutti i tipi</option>'+tipi.map(t=>`<option ${t===cur?"selected":""}>${esc(t)}</option>`).join("");
-  const tf=val("docTipoF"), f=(val("docFilter")||"").toLowerCase();
-  const list=DB.documenti.filter(d=>(!tf||d.tipo===tf)&&(!f||d.titolo.toLowerCase().includes(f)))
-    .sort((a,b)=>(b.data||"").localeCompare(a.data||""));
-  document.getElementById("docBody").innerHTML=list.length? list.map(d=>
-    `<tr><td>${fmtDate(d.data)}</td><td><b>${esc(d.titolo)}</b></td><td>${esc(d.tipo)}</td>
-     <td class="muted">${esc(d.note||"")}</td>
-     <td><a href="${esc(d.link)}" target="_blank" rel="noopener" class="btn ghost" style="padding:4px 10px;font-size:12px;text-decoration:none">↗ Apri</a></td>
-     <td><button class="iconbtn" onclick="editDoc(${d.id})" title="Modifica">✏️</button><button class="iconbtn" onclick="delDoc(${d.id})" title="Elimina">🗑</button></td></tr>`).join("")
-    :`<tr><td colspan="6" class="empty">Nessun documento registrato.</td></tr>`;
-}
-
-// ---------- PROGETTI ----------
-const PROG_PILL={"In corso":"in","Finanziato":"ok","Rendicontato":"ok","In valutazione":"warn","Concluso":"warn","Non finanziato":"bad"};
-function addProg(){
-  const t=val("pTitolo"); if(!t){flash("pTitolo");return;}
-  const imp=parseFloat(val("pImporto"));
-  DB.progetti.push({id:uid(),titolo:t,ente:val("pEnte"),stato:val("pStato"),
-    importo:isNaN(imp)?0:imp,inizio:val("pInizio"),fine:val("pFine"),link:normLink(val("pLink")),note:val("pNote")});
-  logAudit("creazione","Progetto",`Progetto "${t}" (${val("pStato")}${!isNaN(imp)&&imp>0?", "+eur(imp):""})`);
-  ["pTitolo","pEnte","pImporto","pInizio","pFine","pLink","pNote"].forEach(clr);
-  save(); renderProg();
-}
-function editProg(id){
-  const p=DB.progetti.find(x=>x.id===id); if(!p)return;
-  openEditModal("Modifica progetto",[
-    {key:"titolo",label:"Titolo progetto"},
-    {key:"ente",label:"Ente finanziatore"},
-    {key:"stato",label:"Stato",type:"select",options:["In corso","Finanziato","Rendicontato","In valutazione","Concluso","Non finanziato"]},
-    {key:"importo",label:"Importo €",type:"number"},
-    {key:"inizio",label:"Inizio",type:"date"},
-    {key:"fine",label:"Fine",type:"date"},
-    {key:"link",label:"Link cartella / dossier"},
-    {key:"note",label:"Note"}
-  ], p, (out)=>{
-    if(!out.titolo){alert("Il titolo è obbligatorio.");return;}
-    const imp=parseFloat(out.importo); out.importo=isNaN(imp)?0:imp; out.link=normLink(out.link);
-    const before={titolo:p.titolo,ente:p.ente,stato:p.stato,importo:p.importo,inizio:p.inizio,fine:p.fine,link:p.link,note:p.note};
-    Object.assign(p,out);
-    const diff=diffFields(before,p,{titolo:"Titolo",ente:"Ente",stato:"Stato",importo:"Importo",inizio:"Inizio",fine:"Fine",link:"Link",note:"Note"});
-    logAudit("modifica","Progetto",`Progetto "${p.titolo}" — ${diff||"nessuna variazione"}`);
-    save(); renderProg(); closeModal();
-  });
-}
-function delProg(id){ const p=DB.progetti.find(x=>x.id===id);
-  if(!confirm("Eliminare il progetto? Il dossier su Drive non viene toccato."))return;
-  DB.progetti=DB.progetti.filter(x=>x.id!==id);
-  logAudit("eliminazione","Progetto",`Eliminato progetto "${p?p.titolo:id}"`);
-  save(); renderProg(); }
-function renderProg(){
-  const sf=val("progStatoF"), f=(val("progFilter")||"").toLowerCase();
-  const list=DB.progetti.filter(p=>(!sf||p.stato===sf)&&(!f||p.titolo.toLowerCase().includes(f)||(p.ente||"").toLowerCase().includes(f)))
-    .sort((a,b)=>(b.inizio||"").localeCompare(a.inizio||""));
-  const periodo=p=>{ const i=p.inizio?fmtDate(p.inizio):"", fn=p.fine?fmtDate(p.fine):""; return (i||fn)?`${i||"…"} – ${fn||"…"}`:"—"; };
-  document.getElementById("progBody").innerHTML=list.length? list.map(p=>
-    `<tr><td><b>${esc(p.titolo)}</b><div class="muted" style="font-size:11px">${esc(p.note||"")}</div></td>
-     <td>${esc(p.ente||"—")}</td><td>${p.importo>0?eur(p.importo):"—"}</td>
-     <td class="muted">${periodo(p)}</td>
-     <td><span class="pill ${PROG_PILL[p.stato]||"warn"}">${esc(p.stato)}</span></td>
-     <td>${p.link?`<a href="${esc(p.link)}" target="_blank" rel="noopener" class="btn ghost" style="padding:4px 10px;font-size:12px;text-decoration:none">↗ Apri</a>`:'<span class="muted">—</span>'}</td>
-     <td><button class="iconbtn" onclick="editProg(${p.id})" title="Modifica">✏️</button><button class="iconbtn" onclick="delProg(${p.id})" title="Elimina">🗑</button></td></tr>`).join("")
-    :`<tr><td colspan="7" class="empty">Nessun progetto registrato.</td></tr>`;
-}
-
-// ---------- CALENDARIO (vista mensile degli eventi) ----------
-let _calRef=new Date(); _calRef.setDate(1);
-function calMove(delta){ _calRef.setMonth(_calRef.getMonth()+delta); renderCalendario(); }
-function calToday(){ _calRef=new Date(); _calRef.setDate(1); renderCalendario(); }
-function renderCalendario(){
-  const MESI=["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
-  const GIORNI=["Lun","Mar","Mer","Gio","Ven","Sab","Dom"];
-  const y=_calRef.getFullYear(), m=_calRef.getMonth();
-  document.getElementById("calTitle").textContent=MESI[m]+" "+y;
-  // eventi del mese, raggruppati per giorno (chiave aaaa-mm-gg)
-  const byDay={};
-  DB.eventi.forEach(e=>{ if(!e.data)return; const p=e.data.split("-");
-    if(p.length===3 && +p[0]===y && (+p[1]-1)===m){ (byDay[e.data]=byDay[e.data]||[]).push(e); } });
-  const first=new Date(y,m,1); let startDow=(first.getDay()+6)%7; // lun=0
-  const daysInMonth=new Date(y,m+1,0).getDate();
-  const todayStr=today();
-  let cells="";
-  for(let i=0;i<startDow;i++) cells+=`<div class="cal-cell cal-empty"></div>`;
-  for(let d=1;d<=daysInMonth;d++){
-    const ds=`${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-    const evs=byDay[ds]||[];
-    const isToday=ds===todayStr;
-    const chips=evs.map(e=>`<div class="cal-ev" title="${esc(e.titolo)}${e.luogo?" — "+esc(e.luogo):""}" onclick="goToEvento()">${esc(e.titolo)}</div>`).join("");
-    cells+=`<div class="cal-cell${isToday?" cal-today":""}">
-      <div class="cal-num">${d}</div>${chips}</div>`;
-  }
-  const head=GIORNI.map(g=>`<div class="cal-head">${g}</div>`).join("");
-  document.getElementById("calPanel").innerHTML=
-    `<div class="cal-grid">${head}${cells}</div>
-     <p class="muted" style="font-size:12.5px;margin:14px 4px 0">I giorni con attività mostrano il titolo dell'evento. Per aggiungere o modificare un evento usa la sezione <b>Eventi</b>.</p>`;
-}
-function goToEvento(){
-  document.querySelectorAll("#nav button").forEach(x=>x.classList.remove("active"));
-  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
-  const b=document.querySelector('#nav button[data-p="eventi"]'); if(b)b.classList.add("active");
-  document.getElementById("p-eventi").classList.add("active"); renderEventi();
 }
 
 // ---------- DASHBOARD ----------
@@ -1087,21 +661,16 @@ function importBackup(ev){
   const r=new FileReader();
   r.onload=()=>{ try{const d=JSON.parse(r.result);
     if(!d.soci||!d.mov) throw 0;
-    if(confirm("Importare questo backup? I dati attuali verranno sostituiti.")){DB=d; if(!DB.audit)DB.audit=[]; logAudit("sistema","Dati","Importato un backup (dati sostituiti)"); save(); initForms(); renderAll(); alert("Backup importato.");}
+    if(confirm("Importare questo backup? I dati attuali verranno sostituiti.")){DB=normalizeDB(d); save(); initForms(); renderAll(); alert("Backup importato.");}
   }catch(e){alert("File non valido.");} };
   r.readAsText(f); ev.target.value="";
 }
 function resetAll(){ if(confirm("Azzerare TUTTI i dati in modo definitivo?")&&confirm("Confermi? L'operazione non è reversibile.")){
-  DB={org:DB.org,soci:[],quote:[],mov:[],eventi:[],documenti:[],progetti:[],audit:[],counters:{tessera:1,ricevuta:1}};
-  logAudit("sistema","Dati","Azzeramento di tutti i dati");
-  save(); renderAll(); } }
+  DB={org:DB.org,soci:[],quote:[],mov:[],eventi:[],counters:{tessera:1,ricevuta:1}}; save(); renderAll(); } }
 
 // ---------- ORG ----------
 function saveOrg(){
-  const before={name:DB.org.name,fiscal:DB.org.fiscal,sede:DB.org.sede,rapp:DB.org.rapp};
   DB.org={name:val("orgName"),fiscal:val("orgFiscal"),sede:val("orgSede"),rapp:val("orgRapp")};
-  const diff=diffFields(before,DB.org,{name:"Denominazione",fiscal:"C.F./P.IVA",sede:"Sede",rapp:"Rappresentante"});
-  logAudit("modifica","Associazione",`Dati associazione — ${diff||"salvati senza variazioni"}`);
   save(); renderOrgHeader(); alert("Dati associazione salvati.");
 }
 function renderOrgHeader(){
@@ -1130,7 +699,7 @@ function fillSocioSelect(){
     :'<option value="">— nessun socio: aggiungine in sezione Soci —</option>';
 }
 
-function renderAll(){ renderOrgHeader(); renderDash(); renderSoci(); fillSocioSelect(); renderQuote(); renderMov(); renderEventi(); renderDocs(); renderProg(); renderCalendario(); renderRendiconto(); renderAudit(); }
+function renderAll(){ renderOrgHeader(); renderDash(); renderSoci(); fillSocioSelect(); renderQuote(); renderMov(); renderEventi(); renderRendiconto(); }
 function initForms(){
   const o=DB.org;
   document.getElementById("orgName").value=o.name||"";
@@ -1157,16 +726,7 @@ window.doLogin=function(){
     err.style.display="block";
   });
 };
-window.doLogout=function(){
-  if(!confirm("Uscire dall'applicazione?")) return;
-  // registra l'uscita e salva in modo sincrono PRIMA di chiudere la sessione,
-  // perché dopo il signOut l'operatore non sarebbe più identificabile
-  logAudit("accesso","Sessione","Uscita (logout)");
-  const finish=()=>window.FB.logout();
-  if(window.FB && _authReady){
-    window.FB.saveCloud(DB).then(finish).catch(finish);
-  } else finish();
-};
+window.doLogout=function(){ if(confirm("Uscire dall'applicazione?")) window.FB.logout(); };
 
 function startApp(){
   window.FB.onAuth(async (user)=>{
@@ -1176,11 +736,9 @@ function startApp(){
       setSync("load");
       try{
         const cloud=await window.FB.loadCloud();
-        if(cloud) DB=cloud;
-        if(!DB.audit) DB.audit=[];
+        if(cloud) DB=normalizeDB(cloud);
         _authReady=true;
-        logAudit("accesso","Sessione","Accesso effettuato (login)");
-        initForms(); renderAll(); save(); setSync("ok");
+        initForms(); renderAll(); setSync("ok");
       }catch(e){ console.error(e); setSync("err"); alert("Impossibile caricare i dati dal cloud: "+e.message); }
     }else{
       // non autenticato: mostra login
